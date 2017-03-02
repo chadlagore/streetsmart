@@ -1,5 +1,7 @@
 *.class
 *.o
+
 tutorials/
 .idea/
+
 *.iml
