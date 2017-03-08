@@ -1,13 +1,15 @@
 # Street Smrt
 
+:blue_car:
+
 We've put together some user stories!
 
-## User Stories
-+ See real time traffic data.
+## :muscle: User Stories
+:point_up: See real time traffic data.
     + Color coded streets or dots.
     + Vector indicating direction of traffic.
 
-+ See historical data analytics.
+:fist: See historical data analytics.
     + Filters:
         1. Location.
         2. Time window (date/hour).
@@ -19,20 +21,20 @@ We've put together some user stories!
     + Metrics:
         1. Cars/unit time.
 
-+ Configuration.
+:point_right: Configuration.
     + Calibration and GPS information, device ID.
     + Real time events.
     + Distance reading for technician.
     + Wizard interface to get device setup.
 
-+ User database.
+:point_up: User database.
     + A configuration option for admin logins.
 
-## Stretch
-+ See real time traffic data.
+## :metal: Stretch
+:raised_hands: See real time traffic data.
     + How do I travel from `a` to `b` given current conditions.
     + Predictive analysis from `a` to `b`, given historical data.
     + Color coded streets.
 
-+ Configuration.
+:open_hands: Configuration.
     + Error detection: inferring problematic devices.
