@@ -38,7 +38,7 @@ We've put together some user stories!
 
 + How do I travel from `a` to `b` given current conditions.
 + Predictive analysis from `a` to `b`, given historical data.
-+ Color coded streets.
++ Colour coded streets.
 
 #### :open_hands: Configuration.
 
