@@ -8,7 +8,7 @@ We've put together some user stories!
 
 #### :point_up: See real time traffic data.
 
-+ Color coded streets or dots.
++ Colour coded streets or dots.
 + Vector indicating direction of traffic.
 
 #### :fist: See historical data analytics.
