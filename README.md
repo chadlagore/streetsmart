@@ -31,7 +31,8 @@ We've put together some user stories!
 ## Stretch
 + See real time traffic data.
     + How do I travel from `a` to `b` given current conditions.
-    + Predictive analysis from a to b, given historical data.
+    + Predictive analysis from `a` to `b`, given historical data.
     + Color coded streets.
+
 + Configuration.
     + Error detection: inferring problematic devices.
