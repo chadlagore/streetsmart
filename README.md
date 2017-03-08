@@ -43,3 +43,4 @@ We've put together some user stories!
 #### :open_hands: Configuration.
 
 + Error detection: inferring problematic devices.
++ NFC bluetooth syncing
