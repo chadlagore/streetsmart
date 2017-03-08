@@ -32,7 +32,7 @@ We've put together some user stories!
 + Wizard interface to get device setup.
 + A configuration option for admin logins.
 
-## :metal: Stretch
+## :metal: Sick-ass Stretch Goals
 
 #### :raised_hands: See real time traffic data.
 
