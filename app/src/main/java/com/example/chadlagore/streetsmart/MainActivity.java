@@ -30,6 +30,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.util.List;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -41,9 +42,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     GoogleMap googleMap;
     Timer updateMapTimer;
     boolean stopTimer = false;
+    boolean addMarker = false;
 
-    int updateMapTime = 5000; // ms
-    int updateMapDelay = 3000; // ms
+    Random RAND = new Random();
+
+    int updateMapTime = 500; // ms
+    int updateMapDelay = 5000; // ms
     double markerLat = 49.000;
     double markerLon = 122.000;
 
@@ -111,7 +115,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     /** Function to periodically update map markers. */
     private void updateMapMarkers() {
         Log.i("gmaps_timer", "updating map markers");
-        // Do stuff.
+        if (addMarker) {
+            // Change this!
+            Location lastLoc = mapFragment.getLastLocation();
+            lastLoc.setLatitude(lastLoc.getLatitude() + RAND.nextDouble() / 50);
+            lastLoc.setLongitude(lastLoc.getLongitude() + RAND.nextDouble() / 50);
+            mapFragment.addMarker(lastLoc);
+
+        }
     }
 
     /** Handles Terrain button click. */
