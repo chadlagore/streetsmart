@@ -1,16 +1,13 @@
 package com.example.chadlagore.streetsmart;
 
 import android.bluetooth.BluetoothAdapter;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.view.Menu;
 import android.widget.TextView;
 
-import org.w3c.dom.Text;
-
-import static com.example.chadlagore.streetsmart.R.id.app_toolbar;
 import static com.example.chadlagore.streetsmart.R.id.bluetooth_connection_toolbar;
 
 /**
@@ -18,15 +15,19 @@ import static com.example.chadlagore.streetsmart.R.id.bluetooth_connection_toolb
  */
 
 public class BluetoothConnectionActivity extends AppCompatActivity {
-    BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+    private final static int REQUEST_ENABLE_BT = 1;
+    BluetoothAdapter bluetoothAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bluetooth_connection);
 
-        Toolbar myChildToolbar =
-                (Toolbar) findViewById(R.id.bluetooth_connection_toolbar);
+        /* Create a Bluetooth Adapter */
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+        /* Add the toolbar so we have access to the "Back" button */
+        Toolbar myChildToolbar = (Toolbar) findViewById(R.id.bluetooth_connection_toolbar);
         setSupportActionBar(myChildToolbar);
 
         /* Expand the toolbar at the top of the screen */
@@ -39,13 +40,10 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         /* Enable the Up button */
         ab.setDisplayHomeAsUpEnabled(true);
 
-//        showDevice();
-    }
-
-    public void showDevice() {
-        TextView deviceInfo = new TextView(getApplicationContext());
-
-        /* Create new textView for message */
-        deviceInfo.setText("Hello World!");
+        /* Check if Bluetooth is enabled */
+        if (!bluetoothAdapter.isEnabled()) {
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+        }
     }
 }
