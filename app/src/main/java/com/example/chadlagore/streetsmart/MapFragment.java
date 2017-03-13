@@ -57,6 +57,9 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
     private double vancouverLat = 49.2827;
     private double vancouverLon = 123.1207;
 
+    /*
+     * Connect to GoogleMapsAPI.
+     */
     @Override
     public void onConnected(Bundle bundle) {
 
@@ -74,14 +77,20 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
             Log.i("gmaps", "Current location is null, looking up new.");
             LocationServices.FusedLocationApi.requestLocationUpdates(
                         mGoogleApiClient, mLocationRequest, this);
-
         }
     }
 
+    /*
+     * Update the map type given a mapTypeId.
+     */
     public void changeMapType(int mapTypeId) {
+        Log.i("gmaps", "Updating map type.");
         getMap().setMapType(MAP_TYPES[mapTypeId]);
     }
 
+    /*
+     * Update camera for new position.
+     */
     private void handleNewLocation( Location location ) {
         Log.i("gmaps", "Building camera position.");
         Log.i("gmaps", "Lat: " + location.getLatitude());
@@ -102,6 +111,9 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
     }
 
 
+    /*
+     * Connects to GoogleApiClient, create LocationRequest.
+     */
     @Override
     public void onStart() {
         Log.i("gmaps", "Starting maps...");
@@ -119,7 +131,8 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
     public void onPause() {
         super.onPause();
         if (mGoogleApiClient.isConnected()) {
-            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+            LocationServices.FusedLocationApi
+                    .removeLocationUpdates(mGoogleApiClient, this);
             mGoogleApiClient.disconnect();
         }
     }
@@ -161,6 +174,9 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
             return false;
     }
 
+    /*
+     * Create a new view and initialize listeners.
+     */
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -168,15 +184,18 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
 
         setHasOptionsMenu(true);
 
-        mGoogleApiClient = new GoogleApiClient.Builder( getActivity() )
-                .addConnectionCallbacks(this )
-                .addOnConnectionFailedListener( this )
-                .addApi(LocationServices.API )
+        mGoogleApiClient = new GoogleApiClient.Builder(getActivity())
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
                 .build();
 
         initListeners();
     }
 
+    /*
+     * Initialize map listeners.
+     */
     private void initListeners() {
         getMap().setOnMarkerClickListener(this);
         getMap().setOnMapLongClickListener(this);
@@ -184,6 +203,9 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
         getMap().setOnMapClickListener(this);
     }
 
+    /*
+     * Response to location change.
+     */
     @Override
     public void onLocationChanged(Location location) {
         handleNewLocation(location);

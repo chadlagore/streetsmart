@@ -29,31 +29,36 @@ public class MainActivity extends AppCompatActivity {
 
     public void onSatelliteClick(View view) {
         FragmentManager getSupportFragmentManager ;
-        MapFragment fragment = (MapFragment)getSupportFragmentManager().findFragmentById(R.id.map);
+        MapFragment fragment = (MapFragment)getSupportFragmentManager()
+                .findFragmentById(R.id.map);
         fragment.changeMapType(fragment.MAP_TYPES[GoogleMap.MAP_TYPE_SATELLITE]);
     }
 
     public void onNormalClick(View view) {
         FragmentManager getSupportFragmentManager ;
-        MapFragment fragment = (MapFragment)getSupportFragmentManager().findFragmentById(R.id.map);
+        MapFragment fragment = (MapFragment)getSupportFragmentManager()
+                .findFragmentById(R.id.map);
         fragment.changeMapType(fragment.MAP_TYPES[GoogleMap.MAP_TYPE_NORMAL]);
     }
 
     public void onHybridClick(View view) {
         FragmentManager getSupportFragmentManager ;
-        MapFragment fragment = (MapFragment)getSupportFragmentManager().findFragmentById(R.id.map);
+        MapFragment fragment = (MapFragment)getSupportFragmentManager()
+                .findFragmentById(R.id.map);
         fragment.changeMapType(fragment.MAP_TYPES[GoogleMap.MAP_TYPE_HYBRID]);
     }
 
     public void onTerrainClick(View view) {
         FragmentManager getSupportFragmentManager ;
-        MapFragment fragment = (MapFragment)getSupportFragmentManager().findFragmentById(R.id.map);
+        MapFragment fragment = (MapFragment)getSupportFragmentManager()
+                .findFragmentById(R.id.map);
         fragment.changeMapType(fragment.MAP_TYPES[GoogleMap.MAP_TYPE_TERRAIN]);
     }
 
     public void onNoneClick(View view) {
         FragmentManager getSupportFragmentManager ;
-        MapFragment fragment = (MapFragment)getSupportFragmentManager().findFragmentById(R.id.map);
+        MapFragment fragment = (MapFragment)getSupportFragmentManager()
+                .findFragmentById(R.id.map);
         fragment.changeMapType(fragment.MAP_TYPES[GoogleMap.MAP_TYPE_NONE]);
     }
 }
