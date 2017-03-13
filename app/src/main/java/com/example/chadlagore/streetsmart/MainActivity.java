@@ -1,6 +1,10 @@
 package com.example.chadlagore.streetsmart;
 
+import android.support.v7.app.AppCompatActivity;
+
+import com.google.android.gms.maps.OnMapReadyCallback;
 import android.content.Intent;
+import android.location.Location;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -9,21 +13,38 @@ import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Toast;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import static com.example.chadlagore.streetsmart.R.id.app_toolbar;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
+
+    MapFragment mapFragment;
+    GoogleMap googleMap;
+    Timer updateMapTimer;
+
+    int updateMapTime = 5000; // ms
+    int updateMapDelay = 3000; // ms
+    double markerLat = 49.000;
+    double markerLon = 122.000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,9 +73,46 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+    /** Initializes the map updater. */
+    private void initMapUpdateTimer() {
+        Timer updateMapTimer = new Timer();
+        UpdateMapTask my_task = new UpdateMapTask();
+        updateMapTimer.schedule(my_task, updateMapDelay, updateMapTime);
+    }
+
+    /** Asyncronously gets access to map. */
     @Override
+    public void onMapReady(GoogleMap googleMap) {
+        googleMap = googleMap;
+        initMapUpdateTimer();
+    }
+
+    /** Class performs async updates to map. */
+    public class UpdateMapTask extends TimerTask {
+        public void run() {
+            markerLat += 1;
+            markerLon += 1;
+
+            runOnUiThread(new Runnable() {
+                public void run() {
+                    updateMapMarkers();
+                }
+            });
+        }
+    }
+
+    private void updateMapMarkers() {
+        if (mapFragment == null) {
+            Log.i("gmaps_timer", "map null");
+        }
+
+        Log.i("gmaps_timer", "updating map markers");
+    }
+
+    /** Handles Terrain button click. */
     public boolean onOptionsItemSelected(MenuItem item) {
-        MapFragment fragment = (MapFragment)getSupportFragmentManager()
+        FragmentManager getSupportFragmentManager;
+        MapFragment fragment = (MapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
 
         switch (item.getItemId()) {
@@ -79,5 +137,10 @@ public class MainActivity extends AppCompatActivity {
                 // Invoke the superclass to handle it.
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    /** Returns map fragment. */
+    public MapFragment getMapFragement() {
+        return (MapFragment)getSupportFragmentManager().findFragmentById(R.id.map);
     }
 }
