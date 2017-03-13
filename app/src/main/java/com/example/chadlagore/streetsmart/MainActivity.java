@@ -71,7 +71,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
 
         /** Initialize the map overlay timer. */
-        initMapUpdateTimer();
+        if (addMarker) {
+            initMapUpdateTimer();
+        }
         mapFragment = getMapFragement();
     }
 
@@ -115,14 +117,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     /** Function to periodically update map markers. */
     private void updateMapMarkers() {
         Log.i("gmaps_timer", "updating map markers");
-        if (addMarker) {
-            // Change this!
-            Location lastLoc = mapFragment.getLastLocation();
-            lastLoc.setLatitude(lastLoc.getLatitude() + RAND.nextDouble() / 50);
-            lastLoc.setLongitude(lastLoc.getLongitude() + RAND.nextDouble() / 50);
-            mapFragment.addMarker(lastLoc);
 
-        }
+        // Change this!
+        Location lastLoc = mapFragment.getLastLocation();
+        lastLoc.setLatitude(lastLoc.getLatitude() + RAND.nextDouble() / 50);
+        lastLoc.setLongitude(lastLoc.getLongitude() + RAND.nextDouble() / 50);
+        mapFragment.addMarker(lastLoc);
     }
 
     /** Handles Terrain button click. */
