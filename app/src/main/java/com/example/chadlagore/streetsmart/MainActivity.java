@@ -116,10 +116,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .findFragmentById(R.id.map);
 
         switch (item.getItemId()) {
-            case R.id.satellite_button:
-                fragment.changeMapType(fragment.MAP_TYPES[GoogleMap.MAP_TYPE_SATELLITE]);
-                return true;
-
             case R.id.normal_button:
                 fragment.changeMapType(fragment.MAP_TYPES[GoogleMap.MAP_TYPE_NORMAL]);
                 return true;
@@ -132,7 +128,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 fragment.changeMapType(fragment.MAP_TYPES[GoogleMap.MAP_TYPE_TERRAIN]);
                 return true;
 
-            case R.id.none_button:
+            case R.id.satellite_button:
                 fragment.changeMapType(fragment.MAP_TYPES[GoogleMap.MAP_TYPE_NONE]);
                 return true;
 
