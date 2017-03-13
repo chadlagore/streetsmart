@@ -30,6 +30,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.util.List;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -40,30 +41,40 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     MapFragment mapFragment;
     GoogleMap googleMap;
     Timer updateMapTimer;
+    boolean stopTimer = false;
+    boolean addMarker = false;
 
-    int updateMapTime = 5000; // ms
-    int updateMapDelay = 3000; // ms
+    Random RAND = new Random();
+
+    int updateMapTime = 500; // ms
+    int updateMapDelay = 5000; // ms
     double markerLat = 49.000;
     double markerLon = 122.000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+                setContentView(R.layout.activity_main);
 
         /* Expand the toolbar at the top of the screen */
-        Toolbar appToolbar = (Toolbar) findViewById(app_toolbar);
-        setSupportActionBar(appToolbar);
+                Toolbar appToolbar = (Toolbar) findViewById(app_toolbar);
+                setSupportActionBar(appToolbar);
 
         /* Add "DEVICE" button event listener */
-        final Button deviceConnect = (Button) findViewById(R.id.deviceConnect);
-        deviceConnect.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                Intent intent = new Intent(getApplicationContext(), BluetoothConnectionActivity.class);
+                final Button deviceConnect = (Button) findViewById(R.id.deviceConnect);
+                deviceConnect.setOnClickListener(new View.OnClickListener() {
+                    public void onClick(View v) {
+                        Intent intent = new Intent(getApplicationContext(), BluetoothConnectionActivity.class);
                 setContentView(R.layout.activity_bluetooth_connection);
                 startActivity(intent);
             }
         });
+
+        /** Initialize the map overlay timer. */
+        if (addMarker) {
+            initMapUpdateTimer();
+        }
+        mapFragment = getMapFragement();
     }
 
     /* Inflate toolbar menu */
@@ -93,20 +104,25 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             markerLat += 1;
             markerLon += 1;
 
-            runOnUiThread(new Runnable() {
-                public void run() {
-                    updateMapMarkers();
-                }
-            });
+            if (!stopTimer) {
+                runOnUiThread(new Runnable() {
+                    public void run() {
+                        updateMapMarkers();
+                    }
+                });
+            }
         }
     }
 
+    /** Function to periodically update map markers. */
     private void updateMapMarkers() {
-        if (mapFragment == null) {
-            Log.i("gmaps_timer", "map null");
-        }
-
         Log.i("gmaps_timer", "updating map markers");
+
+        // Change this!
+        Location lastLoc = mapFragment.getLastLocation();
+        lastLoc.setLatitude(lastLoc.getLatitude() + RAND.nextDouble() / 50);
+        lastLoc.setLongitude(lastLoc.getLongitude() + RAND.nextDouble() / 50);
+        mapFragment.addMarker(lastLoc);
     }
 
     /** Handles Terrain button click. */
@@ -142,5 +158,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     /** Returns map fragment. */
     public MapFragment getMapFragement() {
         return (MapFragment)getSupportFragmentManager().findFragmentById(R.id.map);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        stopTimer = true;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        stopTimer = false;
     }
 }

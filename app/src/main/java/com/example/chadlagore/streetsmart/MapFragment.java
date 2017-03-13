@@ -21,6 +21,7 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -134,6 +135,16 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
         return LocationServices
                 .FusedLocationApi
                 .getLastLocation(mGoogleApiClient);
+    }
+
+    public void addMarker(Location loc) {
+        getMap().addMarker(new MarkerOptions()
+                .position(new LatLng(loc.getLatitude(), loc.getLongitude()))
+                .title("new pointer")
+                .snippet("close to you!")
+                .rotation((float) -15.0)
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE))
+        );
     }
 
     @Override
