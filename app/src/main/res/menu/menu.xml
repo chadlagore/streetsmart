@@ -1,0 +1,46 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_height="50dp"
+    android:layout_width="match_parent">
+
+    <item
+        android:title="@string/map_type_satellite"
+        android:id="@+id/satellite_button"
+        android:icon="@mipmap/satellite"
+        app:showAsAction="withText|always"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <item
+        android:title="@string/map_type_normal"
+        android:id="@+id/normal_button"
+        android:icon="@mipmap/normal"
+        app:showAsAction="withText|always"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <item
+        android:title="@string/map_type_hybrid"
+        android:id="@+id/hybrid_button"
+        android:icon="@mipmap/overlay"
+        app:showAsAction="withText|always"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <item
+        android:title="@string/map_type_terrain"
+        android:id="@+id/terrain_button"
+        android:icon="@mipmap/terrain"
+        app:showAsAction="withText|always"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <item
+        android:title="@string/map_type_none"
+        android:id="@+id/none_button"
+        android:text="@string/map_type_none"
+        app:showAsAction="withText|always"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+</menu>
