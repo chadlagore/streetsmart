@@ -62,14 +62,7 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
      */
     @Override
     public void onConnected(Bundle bundle) {
-
-        if (mGoogleApiClient == null) {
-            Log.i("gmaps", "google api client is null");
-        }
-
-        mCurrentLocation = LocationServices
-                .FusedLocationApi
-                .getLastLocation(mGoogleApiClient);
+        mCurrentLocation = getLastLocation();
 
         if (mCurrentLocation != null) {
             handleNewLocation(mCurrentLocation);
@@ -135,6 +128,12 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
                     .removeLocationUpdates(mGoogleApiClient, this);
             mGoogleApiClient.disconnect();
         }
+    }
+
+    public Location getLastLocation() {
+        return LocationServices
+                .FusedLocationApi
+                .getLastLocation(mGoogleApiClient);
     }
 
     @Override
