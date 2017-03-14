@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     GoogleMap googleMap;
     Timer updateMapTimer;
     boolean stopTimer = false;
-    boolean addMarker = false;
+    boolean addMarker = true;
 
     Random RAND = new Random();
 

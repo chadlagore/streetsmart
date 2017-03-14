@@ -8,4 +8,5 @@
     <string name="map_type_none">None</string>
     <string name="map_type_title">Map Type</string>
     <string name="update_map_type">Update Map</string>
+    <string name="dialog_message">Recent Traffic</string>
 </resources>
