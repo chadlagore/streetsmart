@@ -1,7 +1,10 @@
 package com.example.chadlagore.streetsmart;
 
 import android.Manifest;
+import android.app.Dialog;
+import android.support.v4.app.DialogFragment;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
@@ -179,9 +182,15 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
 
     }
 
+    private void showDialog(Marker marker) {
+        TrafficGraph trafficGraph = TrafficGraph.newInstance("Some Title");
+        trafficGraph.show(getActivity().getFragmentManager(), "dialog_layout");
+    }
+
     @Override
     public boolean onMarkerClick(Marker marker) {
-            return false;
+        showDialog(marker);
+        return true;
     }
 
     /*
