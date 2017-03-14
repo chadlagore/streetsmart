@@ -5,10 +5,7 @@ import android.support.v7.app.AppCompatActivity;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import android.content.Intent;
 import android.location.Location;
-import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
@@ -16,20 +13,9 @@ import android.view.MenuItem;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
-import android.widget.Toast;
 
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
 
-import java.util.List;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -37,6 +23,8 @@ import java.util.TimerTask;
 import static com.example.chadlagore.streetsmart.R.id.app_toolbar;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
+
+    static final int DE1_CONFIG = 1;
 
     MapFragment mapFragment;
     GoogleMap googleMap;
@@ -54,19 +42,19 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-                setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_main);
 
         /* Expand the toolbar at the top of the screen */
-                Toolbar appToolbar = (Toolbar) findViewById(app_toolbar);
-                setSupportActionBar(appToolbar);
+        Toolbar appToolbar = (Toolbar) findViewById(app_toolbar);
+        setSupportActionBar(appToolbar);
 
         /* Add "DEVICE" button event listener */
-                final Button deviceConnect = (Button) findViewById(R.id.deviceConnect);
-                deviceConnect.setOnClickListener(new View.OnClickListener() {
-                    public void onClick(View v) {
-                        Intent intent = new Intent(getApplicationContext(), BluetoothConnectionActivity.class);
+        final Button deviceConnect = (Button) findViewById(R.id.deviceConnect);
+        deviceConnect.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(), BluetoothConnectionActivity.class);
                 setContentView(R.layout.activity_bluetooth_connection);
-                startActivity(intent);
+                startActivityForResult(intent, DE1_CONFIG);
             }
         });
 
@@ -170,5 +158,21 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onResume() {
         super.onResume();
         stopTimer = false;
+    }
+
+
+    /**
+     * This is method gets invoked when an activity that was started from MainActivity
+     * using startActivityForResult() returns control to MainActivity using finish().
+     * @param requestCode
+     * @param resultCode
+     * @param data
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        /* Refresh MainActivity */
+        Intent refresh = new Intent(this, MainActivity.class);
+        startActivity(refresh);
+        this.finish();
     }
 }
