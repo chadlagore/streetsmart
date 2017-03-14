@@ -46,6 +46,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 String deviceName = device.getName();
                 String deviceHardwareAddress = device.getAddress();
+                // TODO: implement this
             }
         }
     };
@@ -111,7 +112,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         try {
             unregisterReceiver(broadcastReceiver);
         } catch (Exception e) {
-            //TODO: do something
+            // TODO: do something
         }
     }
 
@@ -148,7 +149,9 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
 
     /**
-     *  Show dialog box telling user bluetooth is not available
+     * Show dialog box telling user bluetooth is not available
+     * @param message
+     * @param title
      */
     private void showBluetoothDialog(String message, String title) {
         /* Instantiate an AlertDialog.Builder with its constructor */
