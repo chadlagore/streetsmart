@@ -63,7 +63,7 @@ public class Intersection {
         this.crossroad_first = crossroad_first;
         this.last_minute_passthroughs = last_minute_passthroughs;
 
-        this.green = 
+        this.green =
     }
 
     /**

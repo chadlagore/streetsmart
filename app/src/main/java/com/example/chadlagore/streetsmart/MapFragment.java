@@ -100,7 +100,7 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
                 .zoom(16f)
                 .build();
 
-        getMap().moveCamera(CameraUpdateFactory
+        getMapAsync().moveCamera(CameraUpdateFactory
                 .newCameraPosition( position ));
 
         getMap().setMapType( MAP_TYPES[curMapTypeIndex] );
@@ -251,6 +251,6 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-
+        this.
     }
 }
