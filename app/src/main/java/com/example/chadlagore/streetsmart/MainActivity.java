@@ -15,6 +15,10 @@ import android.view.View;
 import android.widget.Button;
 
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+
+import org.json.JSONArray;
 
 import java.util.Random;
 import java.util.Timer;
@@ -29,13 +33,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     MapFragment mapFragment;
     GoogleMap googleMap;
     Timer updateMapTimer;
+    StreetSmartClient streetSmartClient;
+
     boolean stopTimer = false;
     boolean addMarker = true;
-
-    Random RAND = new Random();
-
-    int updateMapTime = 500; // ms
-    int updateMapDelay = 5000; // ms
+    int updateMapTime = 5000; // ms
+    int updateMapDelay = 100; // ms
     double markerLat = 49.000;
     double markerLon = 122.000;
 
@@ -62,7 +65,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (addMarker) {
             initMapUpdateTimer();
         }
+
+        /** Get the new map fragment. */
         mapFragment = getMapFragement();
+
+        /** Instantiate the street smart API client. */
+        streetSmartClient = new StreetSmartClient();
     }
 
     /* Inflate toolbar menu */
@@ -89,28 +97,32 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     /** Class performs async updates to map. */
     public class UpdateMapTask extends TimerTask {
         public void run() {
-            markerLat += 1;
-            markerLon += 1;
+            Log.i("gmaps_timer", "timer tick");
 
             if (!stopTimer) {
                 runOnUiThread(new Runnable() {
                     public void run() {
-                        updateMapMarkers();
+                        callStreetSmartAPI(
+                                new LatLngBounds(new LatLng(49.25, -123.10),
+                                        new LatLng(49.27, -123.15)));
                     }
                 });
             }
         }
     }
 
+    /** Calls street smart API for new data. */
+    private void callStreetSmartAPI(LatLngBounds bounds) {
+        Log.i("gmaps_timer", "running api call");
+        JSONArray response = streetSmartClient.getIntersection(bounds);
+        if (streetSmartClient.responseJSON != null) {
+            Log.i("gmaps_timer", streetSmartClient.responseJSON.toString());
+        }
+    }
+
     /** Function to periodically update map markers. */
     private void updateMapMarkers() {
         Log.i("gmaps_timer", "updating map markers");
-
-        // Change this!
-        Location lastLoc = mapFragment.getLastLocation();
-        lastLoc.setLatitude(lastLoc.getLatitude() + RAND.nextDouble() / 50);
-        lastLoc.setLongitude(lastLoc.getLongitude() + RAND.nextDouble() / 50);
-        mapFragment.addMarker(lastLoc);
     }
 
     /** Handles Terrain button click. */
@@ -159,7 +171,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         super.onResume();
         stopTimer = false;
     }
-
 
     /**
      * This is method gets invoked when an activity that was started from MainActivity
