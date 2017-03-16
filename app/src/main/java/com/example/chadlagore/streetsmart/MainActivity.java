@@ -215,7 +215,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         /* Test if we have a response yet. */
         if (response != null) {
             intersectionsJSON = streetSmartClient.responseJSON;
-            updateMapMarkers();
+//            updateMapMarkers();
         }
     }
 
