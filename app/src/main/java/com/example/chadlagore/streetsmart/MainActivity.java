@@ -47,8 +47,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     boolean stopTimer = false;
     boolean addMarker = true;
 
-    Random RAND = new Random();
-
     // Master list of markers being tracked --may want
     // to update to a resizable array in the future. When the
     // app is opened, the first batch of data will be used to
@@ -123,6 +121,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     /**
      * Class performs async updates to map.
+     *
+     * Runs every <code>updateMapTime</code>ms after an initial delay of <code>updateMapDelay</code>.
+     * The StreetSmartAPI is queried for new data, this task occurs asynchronously. Then the markers
+     * on the map are updated to match with the most recently available data. This data likely does
+     * not correspond to the that of the current API call.
      */
     public class UpdateMapTask extends TimerTask {
         public void run() {
@@ -131,8 +134,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 runOnUiThread(new Runnable() {
                     public void run() {
                         collectNewIntersectionData(
-                                new LatLngBounds(new LatLng(49.25, -123.10),
-                                        new LatLng(49.27, -123.15)));
+                                new LatLngBounds(new LatLng(49.26, -123.10),
+                                        new LatLng(49.27, -123.12)));
                     }
                 });
             }
@@ -202,9 +205,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      * @effects updates this.intersections with the new data.
      */
     private void collectNewIntersectionData(LatLngBounds bounds) {
-        JSONArray response = streetSmartClient.getIntersection(bounds);
-        if (streetSmartClient.responseJSON != null) {
-            Log.i("gmaps_timer", streetSmartClient.responseJSON.toString());
+
+        /* Ask client to update asyncronously. */
+        streetSmartClient.updateIntersections(bounds);
+
+        /* Get latest data. */
+        JSONArray response = streetSmartClient.getLatestIntersections();
+
+        /* Test if we have a response yet. */
+        if (response != null) {
             intersectionsJSON = streetSmartClient.responseJSON;
             updateMapMarkers();
         }

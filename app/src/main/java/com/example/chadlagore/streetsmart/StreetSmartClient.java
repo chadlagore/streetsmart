@@ -1,26 +1,16 @@
 package com.example.chadlagore.streetsmart;
 
-import android.content.Context;
-import android.content.Intent;
-import android.preference.PreferenceActivity.*;
-import android.support.annotation.Nullable;
-import android.support.annotation.RequiresPermission;
-import android.util.Log;
-
 import com.google.android.gms.maps.model.LatLngBounds;
 
 import org.json.*;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
 
 import okhttp3.Call;
 import okhttp3.Callback;
-import okhttp3.Headers;
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -33,22 +23,31 @@ import okhttp3.Response;
 
 public class StreetSmartClient {
 
+    /* The heroku host. */
     private final String base_url;
-    private final String intersection_endpoint;
+
+    /* The log tag */
     private final String intersection_tag = "intersection_resp";
+
+    /* A JSON Array to hold responses from the server. */
     public JSONArray responseJSON;
+
+    /* A hashmap to connect intersections to ids. */
+    private HashMap<Long, Intersection> intersections;
 
     OkHttpClient client;
 
     /**
-     * Initialize the base_url and endpoints.
+     * Initialize client, url, and intersections buffer.
+     *
      */
     public StreetSmartClient() {
         URL base, intersection;
+
         client = new OkHttpClient();
-        base_url = "http://tranquil-shore-92989.herokuapp.com/";
-        intersection_endpoint = "traffic/intersections/";
+        base_url = "tranquil-shore-92989.herokuapp.com";
         responseJSON = null;
+        intersections = new HashMap<Long, Intersection>();
     }
 
     /**
@@ -59,11 +58,28 @@ public class StreetSmartClient {
      * @param bounds
      * @return a JSONArray of intersections.
      */
-    public JSONArray getIntersection(LatLngBounds bounds) {
+    public void updateIntersections(LatLngBounds bounds) {
+
+        HttpUrl.Builder builder= new HttpUrl.Builder()
+                .scheme("http")
+                .host(base_url)
+                .addPathSegment("traffic")
+                .addPathSegment("intersections");
+
+        /* Only add bounds if bounds passed. */
+        if (bounds != null) {
+            builder.addQueryParameter("lat_lte", String.valueOf(bounds.northeast.latitude))
+                    .addQueryParameter("lat_gte", String.valueOf(bounds.southwest.latitude))
+                    .addQueryParameter("lon_lte", String.valueOf(bounds.southwest.longitude))
+                    .addQueryParameter("lon_gte", String.valueOf(bounds.northeast.longitude));
+        }
+
+        /* Build the url. */
+        HttpUrl url = builder.build();
 
         /* Build a new request. */
         Request request = new Request.Builder()
-                .url(base_url + intersection_endpoint)
+                .url(url)
                 .build();
 
         /* Queue the request, handle failure and response async. */
@@ -87,7 +103,9 @@ public class StreetSmartClient {
                 }
             }
         });
+    }
 
+    public JSONArray getLatestIntersections() {
         return this.responseJSON;
     }
 }
