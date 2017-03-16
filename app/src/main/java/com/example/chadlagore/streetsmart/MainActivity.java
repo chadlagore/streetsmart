@@ -17,9 +17,14 @@ import android.widget.Button;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -34,7 +39,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     GoogleMap googleMap;
     Timer updateMapTimer;
     StreetSmartClient streetSmartClient;
-    JSONArray intersections;
+    HashMap<Long, Intersection> intersections;
 
     boolean stopTimer = false;
     boolean addMarker = true;
@@ -103,7 +108,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 runOnUiThread(new Runnable() {
                     public void run() {
                         collectNewIntersectionData(
-                                new LatLngBounds(new LatLng(49.25, -123.10),
+                                new LatLngBounds(new LatLng(49.26, -123.11),
                                         new LatLng(49.27, -123.15)));
                     }
                 });
@@ -118,16 +123,24 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      * @effects updates this.intersections with the new data.
      */
     private void collectNewIntersectionData(LatLngBounds bounds) {
-        JSONArray response = streetSmartClient.getIntersection(bounds);
-        if (streetSmartClient.responseJSON != null) {
-//            Log.i("gmaps_timer", streetSmartClient.responseJSON.toString());
-            intersections = streetSmartClient.responseJSON;
+        HashMap<Long, Intersection> intersectionsResult = streetSmartClient.getIntersections(bounds);
+
+        if (intersectionsResult != null) {
+            updateMapMarkers(intersectionsResult);
         }
     }
 
-    /** Function to periodically update map markers. */
-    private void updateMapMarkers() {
-        Log.i("gmaps_timer", "updating map markers");
+    /**
+     * Function to periodically update map markers.
+     * @param intersectionsResult
+     */
+    private void updateMapMarkers(HashMap<Long, Intersection> intersectionsResult) {
+        for (Map.Entry<Long, Intersection> intersection: intersectionsResult.entrySet()) {
+            mapFragment.getMap().addMarker(new MarkerOptions()
+                    .position(intersection.getValue().getCoordinates())
+                    .title(intersection.getValue().getStreet_a() +
+                            intersection.getValue().getStreet_b()));
+        }
     }
 
     /** Handles Terrain button click. */
