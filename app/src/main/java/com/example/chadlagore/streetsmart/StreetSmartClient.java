@@ -46,7 +46,7 @@ public class StreetSmartClient {
     public StreetSmartClient() {
         URL base, intersection;
         client = new OkHttpClient();
-        base_url = "http://tranquil-shore-92989.herokuapp.com/traffic/intersections";
+        base_url = "http://tranquil-shore-92989.herokuapp.com/";
         intersection_endpoint = "traffic/intersections/";
         responseJSON = null;
     }
