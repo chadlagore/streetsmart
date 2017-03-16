@@ -34,6 +34,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     GoogleMap googleMap;
     Timer updateMapTimer;
     StreetSmartClient streetSmartClient;
+    JSONArray intersections;
 
     boolean stopTimer = false;
     boolean addMarker = true;
@@ -97,12 +98,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     /** Class performs async updates to map. */
     public class UpdateMapTask extends TimerTask {
         public void run() {
-            Log.i("gmaps_timer", "timer tick");
 
             if (!stopTimer) {
                 runOnUiThread(new Runnable() {
                     public void run() {
-                        callStreetSmartAPI(
+                        collectNewIntersectionData(
                                 new LatLngBounds(new LatLng(49.25, -123.10),
                                         new LatLng(49.27, -123.15)));
                     }
@@ -111,12 +111,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
-    /** Calls street smart API for new data. */
-    private void callStreetSmartAPI(LatLngBounds bounds) {
-        Log.i("gmaps_timer", "running api call");
+    /**
+     * Calls the street smart API for new intersection data.
+     * @param bounds != null
+     *      Boundaries on the map requested.
+     * @effects updates this.intersections with the new data.
+     */
+    private void collectNewIntersectionData(LatLngBounds bounds) {
         JSONArray response = streetSmartClient.getIntersection(bounds);
         if (streetSmartClient.responseJSON != null) {
-            Log.i("gmaps_timer", streetSmartClient.responseJSON.toString());
+//            Log.i("gmaps_timer", streetSmartClient.responseJSON.toString());
+            intersections = streetSmartClient.responseJSON;
         }
     }
 
