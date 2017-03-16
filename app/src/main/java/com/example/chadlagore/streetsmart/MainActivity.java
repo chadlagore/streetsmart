@@ -154,25 +154,27 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             try {
 
-                // if the intersection object and its associated markers
-                // has already been created, simply update the intersection
-                // with the most recent number of passthroughs during the last minute
+                /*
+                 * if the intersection object and its associated markers
+                 * has already been created, simply update the intersection
+                 * with the most recent number of passthroughs during the last minute
+                 */
                 if (intersections.containsKey(intersectionsJSON.getJSONObject(i).getInt("id"))) {
 
-                    // get the json obj at index 1
+                    /* get the json obj at index 1 */
                     JSONObject jsonobj = intersectionsJSON.getJSONObject(i);
 
-                    // set the number of passthroughs to new value
+                    /* set the number of passthroughs to new value */
                     intersections.get(jsonobj.getInt("id"))
                             .setPassthroughsLastMinute((long) jsonobj.getDouble("cars"));
 
-                // else we need to create the intersection
+                /* else we need to create the intersection */
                 } else {
 
-                    // get the json object at index i
+                    /* get the json object at index i */
                     JSONObject jsonobj = intersectionsJSON.getJSONObject(i);
 
-                    // create the intersection using data from the server
+                    /* create the intersection using data from the server */
                     Intersection intersect = new Intersection(
                             jsonobj.getDouble("latitude"),
                             jsonobj.getDouble("longitude"),
@@ -183,12 +185,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             this.mapFragment
                     );
 
-                    // add to the list of intersections
+                    /* add to the list of intersections */
                     intersections.put(jsonobj.getInt("id"), intersect);
                 }
 
-            // if there was an error while parsing the
-            // response, raise an error
+            /*
+             * if there was an error while parsing the
+             * response, raise an error
+             */
             } catch (Exception e) {
                 e.printStackTrace();
             }
