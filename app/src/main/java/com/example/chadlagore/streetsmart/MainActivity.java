@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     boolean stopTimer = false;
     boolean addMarker = true;
-    int updateMapTime = 5000; // ms
+    int updateMapTime = 30000; // ms
     int updateMapDelay = 100; // ms
     double markerLat = 49.000;
     double markerLon = 122.000;
