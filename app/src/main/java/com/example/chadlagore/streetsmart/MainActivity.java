@@ -105,12 +105,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     /** Function to periodically update map markers. */
     private void updateMapMarkers() {
         Log.i("gmaps_timer", "updating map markers");
-
-        // Change this!
-        Location lastLoc = mapFragment.getLastLocation();
-        lastLoc.setLatitude(lastLoc.getLatitude() + RAND.nextDouble() / 50);
-        lastLoc.setLongitude(lastLoc.getLongitude() + RAND.nextDouble() / 50);
-        mapFragment.addMarker(lastLoc);
+        // TODO: make this better
     }
 
     /** Handles Terrain button click. */

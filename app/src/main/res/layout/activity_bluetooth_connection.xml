@@ -47,10 +47,12 @@
         android:visibility="invisible">
 
         <TextView
-            android:text="Devices"
+            android:id="@+id/received_data"
+            android:text="Received Data"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
+            android:visibility="invisible"
             android:textSize="25dp" />
 
     </LinearLayout>

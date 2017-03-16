@@ -3,24 +3,24 @@ package com.example.chadlagore.streetsmart;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.content.BroadcastReceiver;
-import android.content.Context;
+import android.bluetooth.BluetoothSocket;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.view.View;
-import android.view.ViewGroup;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import java.util.ArrayList;
+import org.w3c.dom.Text;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Set;
+import java.util.UUID;
 
 import static com.example.chadlagore.streetsmart.R.id.bluetooth_connection_toolbar;
 
@@ -32,11 +32,12 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
     /* Some variables we will need access to throughout this activity */
     private final static int REQUEST_ENABLE_BT = 1;
-    private ProgressBar spinnyWheel;
-    private LinearLayout deviceListLayout;
-    private BluetoothAdapter bluetoothAdapter;
-    private ArrayList<BluetoothDevice> deviceList;
-    private BroadcastReceiver broadcastReceiver;
+    private static UUID BT_UUID;
+    private BluetoothAdapter bluetoothAdapter = null;
+    private BluetoothSocket BTSocket = null;
+    private InputStream inputStream = null;
+    private OutputStream outputStream = null;
+    private byte[] inputBuffer = null;
 
 
     /**
@@ -47,9 +48,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bluetooth_connection);
-        spinnyWheel = (ProgressBar) findViewById(R.id.progress_wheel);
-        deviceListLayout = (LinearLayout) findViewById(R.id.bt_linear_layout);
-        deviceList = new ArrayList<>();
 
         /* Add the toolbar so we have access to the "Back" button */
         Toolbar myChildToolbar = (Toolbar) findViewById(R.id.bluetooth_connection_toolbar);
@@ -59,17 +57,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         ActionBar actionBar = getSupportActionBar();
         actionBar.setDisplayHomeAsUpEnabled(true);
 
-         /* Create a BroadcastReceiver for Bluetooth connections. */
-        broadcastReceiver = new BroadcastReceiver() {
-            public void onReceive(Context context, Intent intent) {
-                String action = intent.getAction();
-                if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                /* Bluetooth discovery has found a device. Add it to the device list */
-                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    addToDeviceList(device);
-                }
-            }
-        };
+        BT_UUID = UUID.fromString("c728a19e-e246-4595-8933-5aa3d1ebdbe0");
 
         /* Create a Bluetooth Adapter */
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -90,7 +78,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
             } else {
                 /* Bluetooth is enabled, check for devices */
-                checkAvailableDevices();
+                establishConnection();
             }
         }
     }
@@ -104,7 +92,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == Activity.RESULT_OK) {
             /* The user gave us Bluetooth permissions! YAY! */
-           checkAvailableDevices();
+           establishConnection();
         } else {
             /* The user would not grant us Bluetooth permissions */
             showBluetoothDialog("Sorry, you must grant Bluetooth permissions to connect to " +
@@ -119,7 +107,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
      * @param title
      */
     private void showBluetoothDialog(String message, String title) {
-        /* Instantiate an AlertDialog.Builder with its constructor */
+        /* Instantiate an AlertDialog. Builder with its constructor */
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage(message).setTitle(title);
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -147,72 +135,115 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        try {
-            unregisterReceiver(broadcastReceiver);
-        } catch (IllegalArgumentException e) {
-            /* We are trying to unregister an already unregistered receiver */
-        }
-
+        destroyConnection();
     }
 
-    private void checkAvailableDevices() {
+
+    private void establishConnection() {
          /* Search for paired Bluetooth devices */
         Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
 
         if (pairedDevices.isEmpty()) {
-            /* There are no paired devices so we have to scan for available ones */
-            spinnyWheel.setVisibility(View.VISIBLE);
-            setDeviceListVisibility(TextView.VISIBLE);
-            /*
-             * Register for broadcasts when a Bluetooth device is discovered.
-             * broadcastReceiver.onReceive() should be called every time a device is found.
-             */
-            IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-            registerReceiver(broadcastReceiver, filter);
-            boolean searchBegan = bluetoothAdapter.startDiscovery();
-            if (!searchBegan) {
-                /* Device search failed for some reason, return to MainActivity */
-                showBluetoothDialog("Bluetooth Device Discovery failed.", "OOPS!");
-            }
+            /* We are not paired with a device */
+            showBluetoothDialog("You must be paired with a device to perform this action.",
+                    "Not Paired");
         } else {
             /* We are already paired TODO: actually implement this */
-            showBluetoothDialog("Nice! We're already paired with something.", "Already Paired!");
+            for (BluetoothDevice device : pairedDevices) {
+                /*
+                 * Assume this is the one we want to connect to and
+                 * attempt to establish a connection
+                 */
+                try {
+                    BTSocket = device.createInsecureRfcommSocketToServiceRecord(BT_UUID);
+                    /* We connected successfully, don't connect to anything else */
+                    break;
+                } catch (IOException e) {
+                    /* Try another device */
+                    continue;
+                }
+            }
+            bluetoothAdapter.cancelDiscovery();
+
+            /* Try connect to the device */
+            try {
+                BTSocket.connect(); /* WARNING: this is a blocking call */
+            } catch (IOException e) {
+                showBluetoothDialog("Sorry, an error occurred while attempting to connect to " +
+                "the remote device. Please make sure you are paired with the correct device.",
+                        "Connection Failure");
+            }
+
+            /* The connection succeeded TODO: call manageConnection */
+            showBluetoothDialog("Successfully connected to remote device!",
+                    "Connection Successful");
         }
     }
 
 
     /**
-     * Add a device to the list of available devices and display the new device
-     * @param device
+     * Sends and received data from the remote device asynchronously
      */
-    private void addToDeviceList(BluetoothDevice device) {
-        runOnUiThread(new DeviceListPopulator(device));
+    private void manageConnection() {
+        /* Get input and output streams from Bluetooth Socket */
+        try {
+            inputStream = BTSocket.getInputStream();
+        } catch (IOException e) {
+            showBluetoothDialog("Failed to get input stream from socket.", "Bluetooth Socket Error");
+        }
+        try {
+            outputStream = BTSocket.getOutputStream();
+        } catch (IOException e) {
+            showBluetoothDialog("Failed to get output stream from socket.", "Bluetooth Socket Error");
+        }
+
+        readBytesFromSocket();
     }
 
 
     /**
-     * Will make the deviceList in activity_bluetooth_connection visible
-     * This device list will be updated with new devices every time one is detected
-     * @param visibileOrNot one of TextView.VISIBLE and TextView.INVISIBLE
+     * Just closes the Bluetooth connection with the remote device by closing the socket
      */
-    private void setDeviceListVisibility(int visibileOrNot) {
-        ((ViewGroup)deviceListLayout).setVisibility(visibileOrNot);
+    private void destroyConnection() {
+        if (BTSocket != null) {
+            try {
+                BTSocket.close();
+            } catch (IOException e) {
+                // TODO: handle this more appropriately
+            }
+        }
     }
 
 
-    /* For dynamically populating the list of available Bluetooth devices */
-    public class DeviceListPopulator implements Runnable {
-        BluetoothDevice device;
+    /**
+     * Read data received from the remote device and display it on the screen until and IOException
+     * occurs.
+     */
+    private void readBytesFromSocket() {
+        inputBuffer = new byte[1024];
+        int bytesRead;
 
-        DeviceListPopulator(BluetoothDevice device) {
-            this.device = device;
-        }
+        /* Keep listening for input until error occurs */
+        while (true) {
+            try {
+                bytesRead = inputStream.read(inputBuffer);
+            } catch (IOException e) {
+                showBluetoothDialog("Input stream as disconnected.",
+                        "Bluetooth Socket Error");
+                break;
+            }
 
-        public void run() {
-            TextView deviceView = new TextView(getApplicationContext());
-            deviceView.setText(device.getName());
-            deviceListLayout.addView(deviceView);
-            deviceList.add(device);
+            displayData(inputBuffer.toString());
         }
+    }
+
+    /**
+     * Display the String data on the screen
+     * @param data
+     */
+    private void displayData(String data) {
+        TextView receivedDataView = (TextView) findViewById(R.id.received_data);
+        receivedDataView.setVisibility(TextView.VISIBLE);
+        receivedDataView.setText(data);
     }
 }
