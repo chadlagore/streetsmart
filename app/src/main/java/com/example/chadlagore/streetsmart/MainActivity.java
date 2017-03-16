@@ -15,11 +15,19 @@ import android.view.View;
 import android.widget.Button;
 
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 
 import org.json.JSONArray;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.sql.Array;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -34,10 +42,24 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     GoogleMap googleMap;
     Timer updateMapTimer;
     StreetSmartClient streetSmartClient;
-    JSONArray intersections;
+    JSONArray intersectionsJSON;
 
     boolean stopTimer = false;
     boolean addMarker = true;
+
+    Random RAND = new Random();
+
+    // Master list of markers being tracked --may want
+    // to update to a resizable array in the future. When the
+    // app is opened, the first batch of data will be used to
+    // define the elements of this array
+    private HashMap<Integer, Intersection> intersections = new HashMap<Integer, Intersection>();
+
+    // thresholds for levels of busyness
+    private static final long GREEN = 1;
+    private static final long YELLOW = 5;
+    private static final long RED = 10;
+
     int updateMapTime = 5000; // ms
     int updateMapDelay = 100; // ms
     double markerLat = 49.000;
@@ -81,21 +103,27 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         return true;
     }
 
-    /** Initializes the map updater. */
+    /**
+     * Initializes the map updater.
+     */
     private void initMapUpdateTimer() {
         Timer updateMapTimer = new Timer();
         UpdateMapTask my_task = new UpdateMapTask();
         updateMapTimer.schedule(my_task, updateMapDelay, updateMapTime);
     }
 
-    /** Asyncronously gets access to map. */
+    /**
+     * Asyncronously gets access to map.
+     */
     @Override
     public void onMapReady(GoogleMap googleMap) {
         googleMap = googleMap;
         initMapUpdateTimer();
     }
 
-    /** Class performs async updates to map. */
+    /**
+     * Class performs async updates to map.
+     */
     public class UpdateMapTask extends TimerTask {
         public void run() {
 
@@ -112,6 +140,62 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     /**
+     * Method will update map markers with new data on current conditions.
+     * Update frequency is set by updateMapDelay and updateMapTime which are
+     * instance variables of this class.
+     *
+     * Maps will be displayed with markers in green, red and yellow, depending
+     * on how busy they have been during the last 30 seconds.
+     */
+    private void updateMapMarkers() {
+        Log.i("gmaps_timer", "updating map markers");
+
+        for (int i = 0; i < intersectionsJSON.length(); i++) {
+
+            try {
+
+                // if the intersection object and its associated markers
+                // has already been created, simply update the intersection
+                // with the most recent number of passthroughs during the last minute
+                if (intersections.containsKey(intersectionsJSON.getJSONObject(i).getInt("id"))) {
+
+                    // get the json obj at index 1
+                    JSONObject jsonobj = intersectionsJSON.getJSONObject(i);
+
+                    // set the number of passthroughs to new value
+                    intersections.get(jsonobj.getInt("id"))
+                            .setPassthroughsLastMinute((long) jsonobj.getDouble("cars"));
+
+                // else we need to create the intersection
+                } else {
+
+                    // get the json object at index i
+                    JSONObject jsonobj = intersectionsJSON.getJSONObject(i);
+
+                    // create the intersection using data from the server
+                    Intersection intersect = new Intersection(
+                            jsonobj.getDouble("latitude"),
+                            jsonobj.getDouble("longitude"),
+                            jsonobj.getString("street_a"),
+                            jsonobj.getString("street_b"),
+                            (long) jsonobj.getDouble("cars"),
+                            jsonobj.getInt("id"),
+                            this.mapFragment
+                    );
+
+                    // add to the list of intersections
+                    intersections.put(jsonobj.getInt("id"), intersect);
+                }
+
+            // if there was an error while parsing the
+            // response, raise an error
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
      * Calls the street smart API for new intersection data.
      * @param bounds != null
      *      Boundaries on the map requested.
@@ -120,14 +204,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void collectNewIntersectionData(LatLngBounds bounds) {
         JSONArray response = streetSmartClient.getIntersection(bounds);
         if (streetSmartClient.responseJSON != null) {
-//            Log.i("gmaps_timer", streetSmartClient.responseJSON.toString());
-            intersections = streetSmartClient.responseJSON;
+            Log.i("gmaps_timer", streetSmartClient.responseJSON.toString());
+            intersectionsJSON = streetSmartClient.responseJSON;
+            updateMapMarkers();
         }
-    }
-
-    /** Function to periodically update map markers. */
-    private void updateMapMarkers() {
-        Log.i("gmaps_timer", "updating map markers");
     }
 
     /** Handles Terrain button click. */
@@ -180,8 +260,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     /**
      * This is method gets invoked when an activity that was started from MainActivity
      * using startActivityForResult() returns control to MainActivity using finish().
+     *
      * @param requestCode
+     *
      * @param resultCode
+     *
      * @param data
      */
     @Override
