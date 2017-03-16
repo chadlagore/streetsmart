@@ -1,11 +1,12 @@
 package com.example.chadlagore.streetsmart;
 
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 
 /**
  * Created by devin on 2017-03-14.
  *
- * Method provides an abstraction for an intersection. It contains location,
+ * Class provides an abstraction for an intersection. It contains location,
  * name, and current conditions data. When plotting current conditions on a
  * map across the city, the last_minute_passthroughs is taken as the metric
  * defining current conditions --either red (bad), yellow (ok), or green (good).
@@ -21,6 +22,9 @@ public class Intersection {
     private String crossroad_first;
     private String crossroad_second;
     private long intersection_id;
+
+    // Map this intersection is associated with
+    private MapFragment mapFragment;
 
     // Intersection markers. Three are needed as markers
     // cannot be updated at runtime.
@@ -49,11 +53,18 @@ public class Intersection {
      *                                 by the server.
      *
      * @param intersection_id id of the intersection, assigned on the server
+     *
+     * @param mapFragment the map fragment this intersection is associated with
      */
-    public Intersection (double intersection_latituide, double intersection_longitude,
-                         String crossroad_first, String crossroad_second,
-                         long intersection_id, long last_minute_passthroughs,
-                         ) {
+    public Intersection (double intersection_latituide,
+                         double intersection_longitude,
+                         String crossroad_first,
+                         String crossroad_second,
+                         long intersection_id,
+                         long last_minute_passthroughs,
+                         MapFragment mapFragment) {
+
+        this.mapFragment = mapFragment;
 
         // Simply set instance variables
         this.intersection_id = intersection_id;
@@ -61,9 +72,36 @@ public class Intersection {
         this.intersection_latituide = intersection_latituide;
         this.crossroad_second = crossroad_second;
         this.crossroad_first = crossroad_first;
-        this.last_minute_passthroughs = last_minute_passthroughs;
+        this.mapFragment = mapFragment;
 
-        this.green =
+        // We'll need a latlng to create markers for the map
+        LatLng latlng = new LatLng(this.intersection_latituide, this.intersection_longitude);
+
+        // create the markers associated with this intersection
+        this.green = mapFragment.addMarker(latlng);
+        this.red = mapFragment.addMarker(latlng);
+        this.yellow = mapFragment.addMarker(latlng);
+
+        // initially set the to invisible
+        this.green.setVisible(false);
+        this.yellow.setVisible(false);
+        this.red.setVisible(false);
+
+        // set the marker that is appropriately colored to visible
+        setPassthroughsLastMinute(last_minute_passthroughs);
+    }
+
+    /**
+     * Method will return one of the three markers associated with this
+     * intersection. Which one is returned is dependent on the busyness
+     * of the intersection.
+     *
+     * @return the marker that is currently visible
+     */
+    public Marker getMarker () {
+        if (this.red.isVisible()) return this.red;
+        else if (this.yellow.isVisible()) return this.yellow;
+        else return this.green;
     }
 
     /**
@@ -118,7 +156,8 @@ public class Intersection {
     /**
      * Method will update the number of passthroughs during the
      * last minute. This is the only member of the class which
-     * should change over time.
+     * should change over time. It will also set the appropriately
+     * colored marker to visible.
      *
      * @param passthroughs an integer value, representing the number
      *                     of cars passing through the intersection during
@@ -129,6 +168,14 @@ public class Intersection {
      */
     public void setPassthroughsLastMinute(long passthroughs) {
         this.last_minute_passthroughs = passthroughs;
+
+        if (this.last_minute_passthroughs > 10) {
+            red.setVisible(true);
+        } else if (this.last_minute_passthroughs < 10 && this.last_minute_passthroughs >= 5) {
+            yellow.setVisible(true);
+        } else {
+            green.setVisible(true);
+        }
     }
 
 }

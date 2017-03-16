@@ -38,7 +38,6 @@ import java.util.List;
  */
 
 public class MapFragment extends SupportMapFragment implements GoogleApiClient.ConnectionCallbacks,
-    OnMapReadyCallback,
     GoogleApiClient.OnConnectionFailedListener,
     GoogleMap.OnInfoWindowClickListener,
     GoogleMap.OnMapLongClickListener,
@@ -100,7 +99,7 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
                 .zoom(16f)
                 .build();
 
-        getMapAsync().moveCamera(CameraUpdateFactory
+        getMap().moveCamera(CameraUpdateFactory
                 .newCameraPosition( position ));
 
         getMap().setMapType( MAP_TYPES[curMapTypeIndex] );
@@ -142,14 +141,12 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
                 .getLastLocation(mGoogleApiClient);
     }
 
-    public void addMarker(Location loc) {
-                Marker marker = new Marker() { new MarkerOptions()
-                        .position(new LatLng(,)
-                        .title("new pointer")
-                        .snippet("close to you!")
-                        .rotation((float) -15.0)
-                }
-        );
+    public Marker addMarker(LatLng latlng) {
+        return getMap().addMarker( new MarkerOptions()
+            .position(latlng)
+            .title("new pointer")
+            .snippet("close to you!")
+            .rotation((float) -15.0));
     }
 
     @Override
@@ -249,8 +246,4 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
         handleNewLocation(location);
     }
 
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        this.
-    }
 }
