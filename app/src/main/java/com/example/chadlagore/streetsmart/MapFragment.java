@@ -23,6 +23,7 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
@@ -37,6 +38,7 @@ import java.util.List;
  */
 
 public class MapFragment extends SupportMapFragment implements GoogleApiClient.ConnectionCallbacks,
+    OnMapReadyCallback,
     GoogleApiClient.OnConnectionFailedListener,
     GoogleMap.OnInfoWindowClickListener,
     GoogleMap.OnMapLongClickListener,
@@ -141,12 +143,12 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
     }
 
     public void addMarker(Location loc) {
-        getMap().addMarker(new MarkerOptions()
-                .position(new LatLng(loc.getLatitude(), loc.getLongitude()))
-                .title("new pointer")
-                .snippet("close to you!")
-                .rotation((float) -15.0)
-                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE))
+                Marker marker = new Marker() { new MarkerOptions()
+                        .position(new LatLng(,)
+                        .title("new pointer")
+                        .snippet("close to you!")
+                        .rotation((float) -15.0)
+                }
         );
     }
 
@@ -182,11 +184,28 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
 
     }
 
+    /**
+     * Method displays the custom dialog TraficGraph, which contains a title
+     * (the street name), a graph updating in real time, and a button which
+     * links to the HistoricalData Activity.
+     *
+     * @param marker the marker which the user has clicked on, needed because
+     *               the intersections title is contained within the intersection
+     *               object tagged to the marker in question.
+     */
     private void showDialog(Marker marker) {
         TrafficGraph trafficGraph = TrafficGraph.newInstance("Some Title");
         trafficGraph.show(getActivity().getFragmentManager(), "dialog_layout");
     }
 
+    /**
+     * Method is automatically called when the user clicks on a marker displayed
+     * on the map.
+     *
+     * @param marker the marker the user clicked on
+     *
+     * @return returns true to indicate the click was handled
+     */
     @Override
     public boolean onMarkerClick(Marker marker) {
         showDialog(marker);
@@ -228,5 +247,10 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
     @Override
     public void onLocationChanged(Location location) {
         handleNewLocation(location);
+    }
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+
     }
 }

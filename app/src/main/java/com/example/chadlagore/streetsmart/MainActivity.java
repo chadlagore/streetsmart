@@ -15,7 +15,14 @@ import android.view.View;
 import android.widget.Button;
 
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 
+import org.json.JSONObject;
+
+import java.sql.Array;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -34,8 +41,19 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     Random RAND = new Random();
 
+    // Master list of markers being tracked --may want
+    // to update to a resizable array in the future. When the
+    // app is opened, the first batch of data will be used to
+    // define the elements of this array
+    private HashMap<Long, Marker> markers;
+
+    // thresholds for levels of busyness
+    private static final long GREEN = 1;
+    private static final long YELLOW = 5;
+    private static final long RED = 10;
+
     int updateMapTime = 500; // ms
-    int updateMapDelay = 5000; // ms
+    int updateMapDelay = 100; // ms
     double markerLat = 49.000;
     double markerLon = 122.000;
 
@@ -62,6 +80,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (addMarker) {
             initMapUpdateTimer();
         }
+
         mapFragment = getMapFragement();
     }
 
@@ -102,9 +121,34 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
-    /** Function to periodically update map markers. */
+    /**
+     * Method will update map markers with new data on current conditions.
+     * Update frequency is set by updateMapDelay and updateMapTime which are
+     * instance variables of this class.
+     *
+     * Maps will be displayed with markers in green, red and yellow, depending
+     * on how busy they have been during the last 30 seconds.
+     */
     private void updateMapMarkers() {
         Log.i("gmaps_timer", "updating map markers");
+
+        Object obj = new Object(); // replace with chad's class later
+
+        for(/* for each intersection in chad's http client */) {
+
+            if (/* next intersection in chad's data structure is in markers */) {
+
+                long i = 0; //place holder
+                this.markers.get(i).getTag().setPassthroughsLastMinute(/* passthroughs */);
+            } else {
+
+                try {
+                    Marker newMarker = new Marker( new MarkerOptions()
+                        .position(new LatLng(/*chads lat, chads's long */))
+                        .
+                }
+            }
+        }
 
         // Change this!
         Location lastLoc = mapFragment.getLastLocation();
