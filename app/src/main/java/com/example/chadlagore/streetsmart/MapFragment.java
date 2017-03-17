@@ -2,6 +2,8 @@ package com.example.chadlagore.streetsmart;
 
 import android.Manifest;
 import android.app.Dialog;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.support.v4.app.DialogFragment;
 import android.content.Context;
 import android.content.Intent;
@@ -25,6 +27,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
@@ -49,6 +52,7 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
     private Location mCurrentLocation;
     private LocationManager mLocationManager;
     private LocationRequest mLocationRequest;
+    private BitmapFactory bf;
 
     protected final int[] MAP_TYPES = {
             GoogleMap.MAP_TYPE_SATELLITE,
@@ -58,6 +62,7 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
             GoogleMap.MAP_TYPE_NONE
     };
 
+    // initial location
     private int curMapTypeIndex = 1;
     private double vancouverLat = 49.2827;
     private double vancouverLon = 123.1207;
@@ -141,12 +146,54 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
                 .getLastLocation(mGoogleApiClient);
     }
 
-    public Marker addMarker(LatLng latlng) {
+    /**
+     * Method will create a marker, add it to the googleMap and return
+     * a reference to it.
+     *
+     * @param latlng the latitude and longitude of the marker, provided
+     *               from data form the server
+     *
+     * @param id the intersection id, which is the same as the ids for
+     *           all the other markers associated with the same intersection
+     *
+     * @param title the title is <street_a> + " at " <street_b>
+     *
+     * @param color Thresholds for colors are defined in Intersection.class.
+     *              Simply provide one of the three possible thresholds to
+     *              set the marker to that color
+     *
+     * @return a reference to the marker which has been added to the map
+     */
+    public Marker createMarkerAddToMap(LatLng latlng, Long id, String title, long color) {
+
         return getMap().addMarker( new MarkerOptions()
             .position(latlng)
-            .title("new pointer")
-            .snippet("close to you!")
-            .rotation((float) -15.0));
+            .title(title)
+            .flat(false)
+            .snippet(id.toString())
+            .rotation((float) -15.0)
+            .icon(getProperlyColoredIcon(color)));
+    }
+
+    /**
+     * Method returns the correct icon for the provided level of busyness.
+     * Thresholds for various colors are defined as static members of the
+     * intersection class.
+     *
+     * @param color the value provided for the intersection from the
+     *                 server about cars which have passed through during
+     *                 the last minute
+     *
+     * @return the icon which should be used
+     */
+    public BitmapDescriptor getProperlyColoredIcon(Long color) {
+        if (color.equals(Intersection.RED)) {
+            return BitmapDescriptorFactory.fromResource(R.mipmap.level_red);
+        } else if (color.equals(Intersection.YELLOW)) {
+            return BitmapDescriptorFactory.fromResource(R.mipmap.level_yellow);
+        } else {
+            return BitmapDescriptorFactory.fromResource(R.mipmap.level_green);
+        }
     }
 
     @Override

@@ -35,6 +35,7 @@ import java.util.TimerTask;
 import static com.example.chadlagore.streetsmart.R.id.app_toolbar;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
+    // need to implement onCameraIdleListener
 
     static final int DE1_CONFIG = 1;
 
@@ -54,11 +55,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     // app is opened, the first batch of data will be used to
     // define the elements of this array
     private HashMap<Integer, Intersection> intersections = new HashMap<Integer, Intersection>();
-
-    // thresholds for levels of busyness
-    private static final long GREEN = 1;
-    private static final long YELLOW = 5;
-    private static final long RED = 10;
 
     int updateMapTime = 5000; // ms
     int updateMapDelay = 100; // ms
