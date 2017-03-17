@@ -112,7 +112,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      *           An intersection corresponding to the id.
      *           If not found in the <code>intersections</code> HashMap, returns null.
      */
-    public Intersection getIntersection(Integer id) {
+    public Intersection getIntersection(Long id) {
         return intersections.get(id);
     }
 
@@ -182,6 +182,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             (long) jsonobj.getDouble("cars"),
                             this.mapFragment
                     );
+
+                    if (intersect==null) throw new AssertionError("Intersection cannot be null");
 
                     /* add to the list of intersections */
                     intersections.put(jsonobj.getLong("id"), intersect);

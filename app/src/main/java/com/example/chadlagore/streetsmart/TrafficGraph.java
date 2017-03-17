@@ -89,7 +89,7 @@ public class TrafficGraph extends DialogFragment {
         protected Void doInBackground(Intersection... params) {
             JSONArray newIntersectionData = null;
 
-            Log.i(TAG, "task still running");
+            Log.i(TAG, "updating graph data.");
             Long hash = client.requestIntersection(intersection.getIntersectionID());
 
             /* We can block because we're async */

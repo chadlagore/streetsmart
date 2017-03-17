@@ -242,7 +242,7 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
     private void showDialog(Marker marker) {
 
         /* We need to collect the intersection to build the graph. */
-        Integer id = Integer.valueOf(marker.getSnippet());
+        Long id = Long.valueOf(marker.getSnippet());
         Intersection intersection = ((MainActivity)getActivity()).getIntersection(id);
 
         /* Build graph. */
