@@ -38,14 +38,14 @@
     <LinearLayout
         android:id="@+id/bt_linear_layout"
         android:layout_width="500dp"
-        android:layout_height="700dp"
+        android:layout_height="500dp"
         android:orientation="horizontal"
         android:gravity="center"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/bluetooth_connection_toolbar"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        android:visibility="invisible">
+        app:layout_constraintVertical_bias="0.916">
 
         <TextView
             android:id="@+id/received_data"
