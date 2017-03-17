@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     // to update to a resizable array in the future. When the
     // app is opened, the first batch of data will be used to
     // define the elements of this array
-    private HashMap<Integer, Intersection> intersections = new HashMap<Integer, Intersection>();
+    private HashMap<Long, Intersection> intersections = new HashMap<Long, Intersection>();
 
     int updateMapTime = 5000; // ms
     int updateMapDelay = 100; // ms
@@ -157,13 +157,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                  * has already been created, simply update the intersection
                  * with the most recent number of passthroughs during the last minute
                  */
-                if (intersections.containsKey(intersectionsJSON.getJSONObject(i).getInt("id"))) {
+                if (intersections.containsKey(intersectionsJSON.getJSONObject(i).getLong("id"))) {
 
                     /* get the json obj at index 1 */
                     JSONObject jsonobj = intersectionsJSON.getJSONObject(i);
 
                     /* set the number of passthroughs to new value */
-                    intersections.get(jsonobj.getInt("id"))
+                    intersections.get(jsonobj.getLong("id"))
                             .setPassthroughsLastMinute((long) jsonobj.getDouble("cars"));
 
                 /* else we need to create the intersection */
@@ -178,13 +178,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             jsonobj.getDouble("longitude"),
                             jsonobj.getString("street_a"),
                             jsonobj.getString("street_b"),
+                            jsonobj.getLong("id"),
                             (long) jsonobj.getDouble("cars"),
-                            jsonobj.getInt("id"),
                             this.mapFragment
                     );
 
                     /* add to the list of intersections */
-                    intersections.put(jsonobj.getInt("id"), intersect);
+                    intersections.put(jsonobj.getLong("id"), intersect);
                 }
 
             /*

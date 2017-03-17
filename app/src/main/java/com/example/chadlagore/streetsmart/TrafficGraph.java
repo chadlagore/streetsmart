@@ -95,7 +95,7 @@ public class TrafficGraph extends DialogFragment {
             /* We can block because we're async */
             while ((newIntersectionData = client.request(hash)) == null) { /* spin */ }
 
-            Log.i(TAG, "data up!");
+            Log.i(TAG, newIntersectionData.toString());
 
             return null;
         }
