@@ -1,5 +1,6 @@
 package com.example.chadlagore.streetsmart;
 
+import android.app.Activity;
 import android.app.DialogFragment;
 import android.app.IntentService;
 import android.content.DialogInterface;
@@ -21,6 +22,7 @@ import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Queue;
@@ -34,7 +36,7 @@ import java.util.TimerTask;
 public class TrafficGraph extends DialogFragment {
 
     final private static long updateGraphDelay = 0;
-    final private static long updateGraphInterval = 5000;
+    final private static long updateGraphInterval = 1000;
 
     /* Class debuggig tag. */
     static final private String TAG = "traffic_graph";
@@ -43,6 +45,8 @@ public class TrafficGraph extends DialogFragment {
     static private Intersection intersection;
     static private StreetSmartClient client;
     private static TimerTask graphUpdateTimer = null;
+    private static BarGraphSeries<DataPoint> series;
+    private static int x;
 
     public TrafficGraph() {
         // Empty constructor --use newInstance defined below
@@ -61,16 +65,9 @@ public class TrafficGraph extends DialogFragment {
         client = new StreetSmartClient();
 
         /* Set update timer. */
-        initGraphUpdateTimer();
+//        scheduleMapUpdate();
+        x = 0;
         return frag;
-    }
-
-    /**
-     * Initalizes timer (by making the first call).
-     */
-    private static void initGraphUpdateTimer() {
-        Log.i(TAG, "running callMapUpdate");
-        scheduleMapUpdate();
     }
 
     /**
@@ -81,7 +78,7 @@ public class TrafficGraph extends DialogFragment {
      * asynchronously. This function blocks until it finishes and updates the graph,
      * which is OK because async. TODO: condition variable?
      */
-    public static class UpdateGraphTask extends AsyncTask<Intersection, Void, Void> {
+    public static class UpdateGraphTask extends AsyncTask<Intersection, BarGraphSeries<DataPoint>, Void> {
 
         @Override
         protected Void doInBackground(Intersection... params) {
@@ -93,10 +90,22 @@ public class TrafficGraph extends DialogFragment {
             /* We can block because we're async */
             while ((newIntersectionData = client.request(hash)) == null) { /* spin */ }
 
+            try {
+                JSONObject obj = newIntersectionData.getJSONObject(0);
+                series.appendData(new DataPoint(getNewXVAlue(), obj.getDouble("cars")), true, 4);
+            } catch (JSONException e) {
+                Log.i(TAG, "recived data, but failed to get object.");
+                e.printStackTrace();
+            }
             Log.i(TAG, newIntersectionData.toString());
 
             return null;
         }
+    }
+
+    private static Integer getNewXVAlue() {
+        x += 1;
+        return x;
     }
 
     /*
@@ -133,29 +142,68 @@ public class TrafficGraph extends DialogFragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.dialog_layout, container);
+        View rootView = inflater.inflate(R.layout.dialog_layout, container);
+
+        TextView tv = (TextView) rootView.findViewById(R.id.traffic_graph_text_id);
+        tv.setText(this.intersection.getIntersectionName());
+
+        GraphView gv = (GraphView) rootView.findViewById(R.id.traffic_graph_plot);
+
+        series = new BarGraphSeries<DataPoint>();
+        gv.addSeries(series);
+        gv.getViewport().setXAxisBoundsManual(true);
+        gv.getViewport().setMinX(0);
+        gv.getViewport().setMaxX(10);
+
+        gv.getViewport().setYAxisBoundsManual(true);
+        gv.getViewport().setMinY(0);
+        gv.getViewport().setMaxY(12);
+
+//        series.resetData(generateData());
+
+        return rootView;
     }
+
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Get textview from the view and set interection name for display
-        TextView tv = (TextView) view.findViewById(R.id.traffic_graph_text_id);
-        tv.setText(this.intersection.getIntersectionName());
+//        // Get textview from the view and set interection name for display
+//        TextView tv = (TextView) view.findViewById(R.id.traffic_graph_text_id);
+//        tv.setText(this.intersection.getIntersectionName());
+//
+//        // Create new graph view and add populate with data points for
+//        // the intersection in question.
+//        GraphView gv = (GraphView) view.findViewById(R.id.traffic_graph_plot);
+//        BarGraphSeries<DataPoint> series = new BarGraphSeries<DataPoint>(new DataPoint[] {
+//            new DataPoint(0,1),
+//            new DataPoint(1,5),
+//            new DataPoint(2,3),
+//            new DataPoint(3,2),
+//            new DataPoint(4,6)
+//        });
+//        // Add the graph to the TrafficGraph dialog
+//        gv.addSeries(series);
+    }
 
-        // Create new graph view and add populate with data points for
-        // the intersection in question.
-        GraphView gv = (GraphView) view.findViewById(R.id.traffic_graph_plot);
-        BarGraphSeries<DataPoint> series = new BarGraphSeries<DataPoint>(new DataPoint[] {
-            new DataPoint(0,1),
-            new DataPoint(1,5),
-            new DataPoint(2,3),
-            new DataPoint(3,2),
-            new DataPoint(4,6)
-        });
-        // Add the graph to the TrafficGraph dialog
-        gv.addSeries(series);
+    @Override
+    public void onResume() {
+        super.onResume();
+        scheduleMapUpdate();
+    }
+
+    private DataPoint[] generateData() {
+        int count = 1;
+        DataPoint[] values = new DataPoint[0];
+        for (int i=0; i<count; i++) {
+            double x = i;
+            double f = 5;
+            double y = 3;
+            DataPoint v = new DataPoint(x, y);
+            values[i] = v;
+        }
+        return values;
     }
 
     @Override
