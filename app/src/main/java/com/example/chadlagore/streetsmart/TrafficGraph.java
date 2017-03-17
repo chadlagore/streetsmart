@@ -151,6 +151,7 @@ public class TrafficGraph extends DialogFragment {
 
         series = new BarGraphSeries<DataPoint>();
         gv.addSeries(series);
+
         gv.getViewport().setXAxisBoundsManual(true);
         gv.getViewport().setMinX(0);
         gv.getViewport().setMaxX(10);
@@ -168,23 +169,6 @@ public class TrafficGraph extends DialogFragment {
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
-//        // Get textview from the view and set interection name for display
-//        TextView tv = (TextView) view.findViewById(R.id.traffic_graph_text_id);
-//        tv.setText(this.intersection.getIntersectionName());
-//
-//        // Create new graph view and add populate with data points for
-//        // the intersection in question.
-//        GraphView gv = (GraphView) view.findViewById(R.id.traffic_graph_plot);
-//        BarGraphSeries<DataPoint> series = new BarGraphSeries<DataPoint>(new DataPoint[] {
-//            new DataPoint(0,1),
-//            new DataPoint(1,5),
-//            new DataPoint(2,3),
-//            new DataPoint(3,2),
-//            new DataPoint(4,6)
-//        });
-//        // Add the graph to the TrafficGraph dialog
-//        gv.addSeries(series);
     }
 
     @Override
