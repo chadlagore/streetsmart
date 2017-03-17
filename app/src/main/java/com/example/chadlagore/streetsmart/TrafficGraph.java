@@ -20,6 +20,10 @@ import com.jjoe64.graphview.series.BarGraphSeries;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -40,7 +44,7 @@ public class TrafficGraph extends DialogFragment {
     static private StreetSmartClient client;
     private static TimerTask graphUpdateTimer = null;
     private static boolean running = true;
-
+    Queue<DataPoint> pointsToGraph;
 
     public TrafficGraph() {
         // Empty constructor --use newInstance defined below
@@ -83,14 +87,15 @@ public class TrafficGraph extends DialogFragment {
 
         @Override
         protected Void doInBackground(Intersection... params) {
+            JSONArray newIntersectionData = null;
 
-            if (!isCancelled()) {
-                Log.i(TAG, "task still running");
-                /* Submit new api request. Update graph. */
-            } else {
-                Log.i(TAG, "task cancelled");
+            Log.i(TAG, "task still running");
+            Long hash = client.requestIntersection(intersection.getIntersectionID());
 
-            }
+            /* We can block because we're async */
+            while ((newIntersectionData = client.request(hash)) == null) { /* spin */ }
+
+            Log.i(TAG, "data up!");
 
             return null;
         }
