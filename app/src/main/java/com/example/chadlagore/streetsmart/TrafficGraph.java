@@ -16,6 +16,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.jjoe64.graphview.GraphView;
+import com.jjoe64.graphview.series.BarGraphSeries;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
@@ -37,7 +38,7 @@ public class TrafficGraph extends DialogFragment {
     static private Long intersection_id;
     static private Intersection intersection;
     static private StreetSmartClient client;
-    private static UpdateGraphTask performGraphUpdate = null;
+    private static TimerTask graphUpdateTimer = null;
     private static boolean running = true;
 
 
@@ -88,6 +89,7 @@ public class TrafficGraph extends DialogFragment {
                 /* Submit new api request. Update graph. */
             } else {
                 Log.i(TAG, "task cancelled");
+
             }
 
             return null;
@@ -108,13 +110,13 @@ public class TrafficGraph extends DialogFragment {
         Timer timer = new Timer();
 
         /* Set up task. */
-        TimerTask graphUpdateTimer = new TimerTask() {
+        graphUpdateTimer = new TimerTask() {
             @Override
             public void run() {
                 handler.post(new Runnable() {
                     public void run() {
                         try {
-                            performGraphUpdate = new UpdateGraphTask();
+                            UpdateGraphTask performGraphUpdate = new UpdateGraphTask();
                             performGraphUpdate.execute();
                         } catch (Exception e) {
                             Log.i(TAG, "task failed");
@@ -126,6 +128,7 @@ public class TrafficGraph extends DialogFragment {
         };
 
         /* Schedule task. */
+        Log.i(TAG, "scheduling");
         timer.schedule(graphUpdateTimer, updateGraphDelay, updateGraphInterval);
     }
 
@@ -145,7 +148,7 @@ public class TrafficGraph extends DialogFragment {
         // Create new graph view and add populate with data points for
         // the intersection in question.
         GraphView gv = (GraphView) view.findViewById(R.id.traffic_graph_plot);
-        LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>(new DataPoint[] {
+        BarGraphSeries<DataPoint> series = new BarGraphSeries<DataPoint>(new DataPoint[] {
             new DataPoint(0,1),
             new DataPoint(1,5),
             new DataPoint(2,3),
@@ -159,7 +162,7 @@ public class TrafficGraph extends DialogFragment {
     @Override
     public void onDismiss(DialogInterface dialogInterface) {
         Log.i(TAG, "cancelling");
-        performGraphUpdate.cancel(true);
+        graphUpdateTimer.cancel();
     }
 
 }
