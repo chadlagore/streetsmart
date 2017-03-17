@@ -55,11 +55,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     // define the elements of this array
     private HashMap<Integer, Intersection> intersections = new HashMap<Integer, Intersection>();
 
-    // thresholds for levels of busyness
-    private static final long GREEN = 1;
-    private static final long YELLOW = 5;
-    private static final long RED = 10;
-
     int updateMapTime = 5000; // ms
     int updateMapDelay = 100; // ms
     double markerLat = 49.000;
