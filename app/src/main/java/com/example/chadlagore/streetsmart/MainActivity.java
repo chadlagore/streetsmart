@@ -4,7 +4,6 @@ import android.support.v7.app.AppCompatActivity;
 
 import com.google.android.gms.maps.OnMapReadyCallback;
 import android.content.Intent;
-import android.location.Location;
 import android.support.v4.app.FragmentManager;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -15,20 +14,12 @@ import android.view.View;
 import android.widget.Button;
 
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 
 import org.json.JSONArray;
-
-import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.sql.Array;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -48,13 +39,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     boolean stopTimer = false;
     boolean addMarker = true;
 
-    Random RAND = new Random();
-
     // Master list of markers being tracked --may want
     // to update to a resizable array in the future. When the
     // app is opened, the first batch of data will be used to
     // define the elements of this array
-    private HashMap<Integer, Intersection> intersections = new HashMap<Integer, Intersection>();
+    private HashMap<Long, Intersection> intersections = new HashMap<Long, Intersection>();
 
     int updateMapTime = 5000; // ms
     int updateMapDelay = 100; // ms
@@ -118,7 +107,22 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     /**
+     * Get a reference to an existing intersection in the HashMap.
+     * @param id != null.
+     *           An intersection corresponding to the id.
+     *           If not found in the <code>intersections</code> HashMap, returns null.
+     */
+    public Intersection getIntersection(Long id) {
+        return intersections.get(id);
+    }
+
+    /**
      * Class performs async updates to map.
+     *
+     * Runs every <code>updateMapTime</code>ms after an initial delay of <code>updateMapDelay</code>.
+     * The StreetSmartAPI is queried for new data, this task occurs asynchronously. Then the markers
+     * on the map are updated to match with the most recently available data. This data likely does
+     * not correspond to the that of the current API call.
      */
     public class UpdateMapTask extends TimerTask {
         public void run() {
@@ -126,9 +130,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             if (!stopTimer) {
                 runOnUiThread(new Runnable() {
                     public void run() {
-                        collectNewIntersectionData(
-                                new LatLngBounds(new LatLng(49.25, -123.10),
-                                        new LatLng(49.27, -123.15)));
+                        collectNewIntersectionData(null);
                     }
                 });
             }
@@ -155,13 +157,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                  * has already been created, simply update the intersection
                  * with the most recent number of passthroughs during the last minute
                  */
-                if (intersections.containsKey(intersectionsJSON.getJSONObject(i).getInt("id"))) {
+                if (intersections.containsKey(intersectionsJSON.getJSONObject(i).getLong("id"))) {
 
                     /* get the json obj at index 1 */
                     JSONObject jsonobj = intersectionsJSON.getJSONObject(i);
 
                     /* set the number of passthroughs to new value */
-                    intersections.get(jsonobj.getInt("id"))
+                    intersections.get(jsonobj.getLong("id"))
                             .setPassthroughsLastMinute((long) jsonobj.getDouble("cars"));
 
                 /* else we need to create the intersection */
@@ -176,13 +178,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             jsonobj.getDouble("longitude"),
                             jsonobj.getString("street_a"),
                             jsonobj.getString("street_b"),
+                            jsonobj.getLong("id"),
                             (long) jsonobj.getDouble("cars"),
-                            jsonobj.getInt("id"),
                             this.mapFragment
                     );
 
+                    if (intersect==null) throw new AssertionError("Intersection cannot be null");
+
                     /* add to the list of intersections */
-                    intersections.put(jsonobj.getInt("id"), intersect);
+                    intersections.put(jsonobj.getLong("id"), intersect);
                 }
 
             /*
@@ -202,9 +206,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      * @effects updates this.intersections with the new data.
      */
     private void collectNewIntersectionData(LatLngBounds bounds) {
-        JSONArray response = streetSmartClient.getIntersection(bounds);
-        if (streetSmartClient.responseJSON != null) {
-            Log.i("gmaps_timer", streetSmartClient.responseJSON.toString());
+
+        /* Ask client to update asyncronously. */
+        streetSmartClient.updateIntersections(bounds);
+
+        /* Get latest data. */
+        JSONArray response = streetSmartClient.getLatestIntersections();
+
+        /* Test if we have a response yet. */
+        if (response != null) {
             intersectionsJSON = streetSmartClient.responseJSON;
             updateMapMarkers();
         }

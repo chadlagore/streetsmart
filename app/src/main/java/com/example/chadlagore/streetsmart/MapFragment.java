@@ -34,6 +34,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -48,6 +49,7 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
     GoogleMap.OnMarkerClickListener,
     LocationListener {
 
+    private static final String TAG = "map_fragment";
     private GoogleApiClient mGoogleApiClient;
     private Location mCurrentLocation;
     private LocationManager mLocationManager;
@@ -238,7 +240,13 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
      *               object tagged to the marker in question.
      */
     private void showDialog(Marker marker) {
-        TrafficGraph trafficGraph = TrafficGraph.newInstance("Some Title");
+
+        /* We need to collect the intersection to build the graph. */
+        Long id = Long.valueOf(marker.getSnippet());
+        Intersection intersection = ((MainActivity)getActivity()).getIntersection(id);
+
+        /* Build graph. */
+        TrafficGraph trafficGraph = TrafficGraph.newInstance(intersection);
         trafficGraph.show(getActivity().getFragmentManager(), "dialog_layout");
     }
 
@@ -252,7 +260,13 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
      */
     @Override
     public boolean onMarkerClick(Marker marker) {
-        showDialog(marker);
+        try {
+            showDialog(marker);
+        } catch (Exception e) {
+            Log.i(TAG, "could not show dialog for intersection");
+            e.printStackTrace();
+            return false;
+        }
         return true;
     }
 
