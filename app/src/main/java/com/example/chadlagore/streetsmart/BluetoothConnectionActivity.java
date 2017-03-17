@@ -7,20 +7,18 @@ import android.bluetooth.BluetoothSocket;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.ParcelUuid;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.widget.LinearLayout;
+import android.util.Log;
 import android.widget.TextView;
-
-import org.w3c.dom.Text;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Set;
-import java.util.UUID;
 
 import static com.example.chadlagore.streetsmart.R.id.bluetooth_connection_toolbar;
 
@@ -32,12 +30,12 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
     /* Some variables we will need access to throughout this activity */
     private final static int REQUEST_ENABLE_BT = 1;
-    private static UUID BT_UUID;
     private BluetoothAdapter bluetoothAdapter = null;
     private BluetoothSocket BTSocket = null;
     private InputStream inputStream = null;
     private OutputStream outputStream = null;
     private byte[] inputBuffer = null;
+    private static final String BLUETOOTH = "BLUETOOTH";
 
 
     /**
@@ -56,8 +54,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         setSupportActionBar(appToolbar);
         ActionBar actionBar = getSupportActionBar();
         actionBar.setDisplayHomeAsUpEnabled(true);
-
-        BT_UUID = UUID.fromString("c728a19e-e246-4595-8933-5aa3d1ebdbe0");
 
         /* Create a Bluetooth Adapter */
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -97,6 +93,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             /* The user would not grant us Bluetooth permissions */
             showBluetoothDialog("Sorry, you must grant Bluetooth permissions to connect to " +
                             "external devices.", "Permissions Required");
+            return;
         }
     }
 
@@ -140,6 +137,9 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
 
     private void establishConnection() {
+        ParcelUuid deviceUUID = ParcelUuid.fromString("00000000-0000-0000-0000-000000000000");
+        String deviceName = "NONE";
+
          /* Search for paired Bluetooth devices */
         Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
 
@@ -147,15 +147,18 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             /* We are not paired with a device */
             showBluetoothDialog("You must be paired with a device to perform this action.",
                     "Not Paired");
+            return;
         } else {
-            /* We are already paired TODO: actually implement this */
+            /* We are already paired */
             for (BluetoothDevice device : pairedDevices) {
                 /*
                  * Assume this is the one we want to connect to and
                  * attempt to establish a connection
                  */
                 try {
-                    BTSocket = device.createInsecureRfcommSocketToServiceRecord(BT_UUID);
+                    deviceUUID = device.getUuids()[0];
+                    deviceName = device.getName();
+                    BTSocket = device.createRfcommSocketToServiceRecord(deviceUUID.getUuid());
                     /* We connected successfully, don't connect to anything else */
                     break;
                 } catch (IOException e) {
@@ -170,13 +173,18 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 BTSocket.connect(); /* WARNING: this is a blocking call */
             } catch (IOException e) {
                 showBluetoothDialog("Sorry, an error occurred while attempting to connect to " +
-                "the remote device. Please make sure you are paired with the correct device.",
-                        "Connection Failure");
+                "the remote device. Please make sure you are paired with the correct device.\n" +
+                        e.getMessage(),
+                        "Bluetooth Connection Failure");
+                return;
             }
 
-            /* The connection succeeded TODO: call manageConnection */
-            showBluetoothDialog("Successfully connected to remote device!",
-                    "Connection Successful");
+            TextView uuidView = (TextView) findViewById(R.id.uuid_value);
+            uuidView.setText(deviceUUID.toString());
+            TextView nameView = (TextView) findViewById(R.id.device_name_value);
+            nameView.setText(deviceName);
+
+            manageConnection();
         }
     }
 
@@ -189,15 +197,18 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         try {
             inputStream = BTSocket.getInputStream();
         } catch (IOException e) {
-            showBluetoothDialog("Failed to get input stream from socket.", "Bluetooth Socket Error");
+            showBluetoothDialog(e.getMessage(), "Bluetooth Input Socket Error");
+            return;
         }
         try {
             outputStream = BTSocket.getOutputStream();
         } catch (IOException e) {
-            showBluetoothDialog("Failed to get output stream from socket.", "Bluetooth Socket Error");
+            showBluetoothDialog(e.getMessage(), "Bluetooth Output Socket Error");
+            return;
         }
 
-        readBytesFromSocket();
+        // TODO: After demo I'll have to fix this
+        //receiveData();
     }
 
 
@@ -209,41 +220,46 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             try {
                 BTSocket.close();
             } catch (IOException e) {
-                // TODO: handle this more appropriately
+                /* If this fails the socket was already closed or destroyed, so nothing to do */
             }
         }
     }
 
-
-    /**
-     * Read data received from the remote device and display it on the screen until and IOException
-     * occurs.
-     */
-    private void readBytesFromSocket() {
-        inputBuffer = new byte[1024];
-        int bytesRead;
-
-        /* Keep listening for input until error occurs */
-        while (true) {
-            try {
-                bytesRead = inputStream.read(inputBuffer);
-            } catch (IOException e) {
-                showBluetoothDialog("Input stream as disconnected.",
-                        "Bluetooth Socket Error");
-                break;
-            }
-
-            displayData(inputBuffer.toString());
-        }
-    }
 
     /**
      * Display the String data on the screen
      * @param data
      */
     private void displayData(String data) {
+        Log.i(BLUETOOTH, "Received Data: " + data);
         TextView receivedDataView = (TextView) findViewById(R.id.received_data);
         receivedDataView.setVisibility(TextView.VISIBLE);
-        receivedDataView.setText(data);
+        receivedDataView.setText("Received Data: " + data);
+    }
+
+
+    private void receiveData() {
+        BluetoothConnectionActivity.this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                inputBuffer = new byte[2048];
+                int bytesRead;
+
+                /* Keep listening for input until error occurs */
+                while (true) {
+                    try {
+                        bytesRead = inputStream.read(inputBuffer);
+                        Log.i(BLUETOOTH, Integer.toString(bytesRead));
+                    } catch (IOException e) {
+                        showBluetoothDialog(e.getMessage(),
+                                "Bluetooth Socket Error");
+                        break;
+                    }
+
+                    if (bytesRead != 0) displayData(inputBuffer.toString());
+                    else displayData("Nothing received from device.");
+                }
+            }
+        });
     }
 }
