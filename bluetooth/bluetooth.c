@@ -18,10 +18,6 @@ void sendchar_bluetooth(char c){
 		}
 }
 
-void test_get_char(void){
-	return BLUETOOTH_STATUS & BLUETOOTH_RX_MASK;
-}
-
 char get_char(void){
 	if (BLUETOOTH_STATUS & BLUETOOTH_RX_MASK) {
 		return BLUETOOTH_RXDATA;
@@ -40,7 +36,7 @@ char polling_char(void) {
 void receive(char incoming[]) {
 
 	int i = 0;
-	length = strlen(incoming);
+	int length = strlen(incoming);
 
 	while (i < length) {
 		if ((incoming[i] = get_char()) != '-') {
@@ -52,11 +48,11 @@ void receive(char incoming[]) {
 				break;
 			}
 			usleep(100000);
-			i++
+			i++;
 		}
 	}
 	//debug print
-	incoming[i] = '\0'
+	incoming[i] = '\0';
 }
 
 void sendstring_bluetooth(char str[]){
@@ -112,17 +108,6 @@ void set_pw(char pw[]) {
 	sendstring_bluetooth(pw);
 	sendstring_bluetooth("\r\n");
 	data_mode();
-}
-
-void transmit_string(char str[]) {
-	int i;
-	int length = strlen(str);
-
-	for (i = 0; i < length; i++){
-		sendchar_bluetooth(str[i]);
-	}
-	sendchar_bluetooth("\r");
-	sendchar_bluetooth("\n");
 }
 
 void test_bluetooth(void) {

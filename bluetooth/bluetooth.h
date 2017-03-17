@@ -13,7 +13,6 @@
 
 void init_bluetooth(void);
 void sendchar_bluetooth(char c);
-void test_get_char(void);
 char get_char(void);
 char polling_char(void);
 void receive(char incoming[]);
