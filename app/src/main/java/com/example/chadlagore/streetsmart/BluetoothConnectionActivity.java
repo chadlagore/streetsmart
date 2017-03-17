@@ -35,6 +35,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     private InputStream inputStream = null;
     private OutputStream outputStream = null;
     private byte[] inputBuffer = null;
+    private String dataReceived = "";
     private static final String BLUETOOTH = "BLUETOOTH";
 
 
@@ -173,8 +174,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 BTSocket.connect(); /* WARNING: this is a blocking call */
             } catch (IOException e) {
                 showBluetoothDialog("Sorry, an error occurred while attempting to connect to " +
-                "the remote device. Please make sure you are paired with the correct device.\n" +
-                        e.getMessage(),
+                "the remote device. Please make sure you are paired with the correct device.\n",
                         "Bluetooth Connection Failure");
                 return;
             }
@@ -197,18 +197,21 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         try {
             inputStream = BTSocket.getInputStream();
         } catch (IOException e) {
-            showBluetoothDialog(e.getMessage(), "Bluetooth Input Socket Error");
+            showBluetoothDialog("Sorry, an error occurred while trying to communicate with the " +
+                    "remote device.", "Bluetooth Input Socket Error");
             return;
         }
         try {
             outputStream = BTSocket.getOutputStream();
         } catch (IOException e) {
-            showBluetoothDialog(e.getMessage(), "Bluetooth Output Socket Error");
+            showBluetoothDialog("Sorry, an error occurred while trying to communicate with the " +
+                    "remote device.", "Bluetooth Output Socket Error");
             return;
         }
 
         // TODO: After demo I'll have to fix this
-        //receiveData();
+        receiveString();
+        displayData(dataReceived);
     }
 
 
@@ -238,26 +241,25 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     }
 
 
-    private void receiveData() {
+    private void receiveString() {
         BluetoothConnectionActivity.this.runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 inputBuffer = new byte[2048];
-                int bytesRead;
+                dataReceived = "";
 
                 /* Keep listening for input until error occurs */
                 while (true) {
                     try {
-                        bytesRead = inputStream.read(inputBuffer);
-                        Log.i(BLUETOOTH, Integer.toString(bytesRead));
+                        inputStream.read(inputBuffer);
+                        dataReceived += (char) inputBuffer[0];
+
+                        if (inputBuffer[0] == '\n') return;
                     } catch (IOException e) {
-                        showBluetoothDialog(e.getMessage(),
+                        showBluetoothDialog("The remote device disconnected unexpectedly.",
                                 "Bluetooth Socket Error");
                         break;
                     }
-
-                    if (bytesRead != 0) displayData(inputBuffer.toString());
-                    else displayData("Nothing received from device.");
                 }
             }
         });
