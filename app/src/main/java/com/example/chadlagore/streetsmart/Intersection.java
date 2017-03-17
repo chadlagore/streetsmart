@@ -119,7 +119,7 @@ public class Intersection {
 
     /**
      * Name is taken to be the crossroads concatenated together between
-     * the string "at".
+     * the string "at". No guarantee largest street is first.
      *
      * @return String in the form '<crossroad_first> at <crossroad_second>'
      * */

@@ -35,6 +35,7 @@ import java.util.TimerTask;
 import static com.example.chadlagore.streetsmart.R.id.app_toolbar;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
+    // need to implement onCameraIdleListener
 
     static final int DE1_CONFIG = 1;
 

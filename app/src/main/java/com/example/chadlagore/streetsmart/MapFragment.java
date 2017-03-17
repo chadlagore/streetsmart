@@ -62,6 +62,7 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
             GoogleMap.MAP_TYPE_NONE
     };
 
+    // initial location
     private int curMapTypeIndex = 1;
     private double vancouverLat = 49.2827;
     private double vancouverLon = 123.1207;
