@@ -80,8 +80,8 @@ public class TrafficGraph extends DialogFragment {
      *
      * Runs every <code>updateGraphInterval</code>ms after an initial delay of
      * <code>updateMapDelay</code>. The StreetSmartAPI is queried for new data, this task occurs
-     * asynchronously. The graph is updated based on stale data from the previous collection
-     * attempt.
+     * asynchronously. This function blocks until it finishes and updates the graph,
+     * which is OK because async. TODO: condition variable?
      */
     public static class UpdateGraphTask extends AsyncTask<Intersection, Void, Void> {
 
