@@ -91,8 +91,10 @@ public class TrafficGraph extends DialogFragment {
             while ((newIntersectionData = client.request(hash)) == null) { /* spin */ }
 
             try {
+                int num_bars = 11;
                 JSONObject obj = newIntersectionData.getJSONObject(0);
-                series.appendData(new DataPoint(getNewXVAlue(), obj.getDouble("cars")), true, 4);
+                series.appendData(new DataPoint(getNewXVAlue(),
+                        obj.getDouble("cars")), true, num_bars);
             } catch (JSONException e) {
                 Log.i(TAG, "recived data, but failed to get object.");
                 e.printStackTrace();

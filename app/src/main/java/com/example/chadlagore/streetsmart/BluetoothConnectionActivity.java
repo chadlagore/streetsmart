@@ -236,8 +236,10 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     private void displayData(String data) {
         Log.i(BLUETOOTH, "Received Data: " + data);
         TextView receivedDataView = (TextView) findViewById(R.id.received_data);
+        TextView receivedDistValue = (TextView) findViewById(R.id.dist_reading_value);
         receivedDataView.setVisibility(TextView.VISIBLE);
         receivedDataView.setText("Received Data: " + data);
+        receivedDistValue.setText(data);
     }
 
 
@@ -247,14 +249,23 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             public void run() {
                 inputBuffer = new byte[2048];
                 dataReceived = "";
+                boolean started = false;
+                int bytes_read = 0;
 
                 /* Keep listening for input until error occurs */
                 while (true) {
                     try {
-                        inputStream.read(inputBuffer);
-                        dataReceived += (char) inputBuffer[0];
+                        bytes_read = inputStream.read(inputBuffer);
 
-                        if (inputBuffer[0] == '\n') return;
+                        if (inputBuffer[0] == '$' || started) {
+                            started = true;
+                            dataReceived += new String(inputBuffer, 0, bytes_read);
+                        }
+
+                        if (inputBuffer[0] == '\n' && started) {
+                            dataReceived = dataReceived.replace("$", "");
+                            return;
+                        }
                     } catch (IOException e) {
                         showBluetoothDialog("The remote device disconnected unexpectedly.",
                                 "Bluetooth Socket Error");
