@@ -87,6 +87,10 @@ public class Intersection {
         this.yellow.setVisible(false);
         this.red.setVisible(false);
 
+        this.green.setSnippet(String.valueOf(intersection_id));
+        this.yellow.setSnippet(String.valueOf(intersection_id));
+        this.red.setSnippet(String.valueOf(intersection_id));
+
         // set the marker that is appropriately colored to visible
         setPassthroughsLastMinute(last_minute_passthroughs);
     }

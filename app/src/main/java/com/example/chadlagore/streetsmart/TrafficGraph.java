@@ -1,8 +1,13 @@
 package com.example.chadlagore.streetsmart;
 
 import android.app.DialogFragment;
+import android.app.IntentService;
+import android.content.DialogInterface;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,26 +19,114 @@ import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 /**
  * Created by devin on 2017-03-13.
  */
 
 public class TrafficGraph extends DialogFragment {
 
-    private String intersectionName;
+    final private static long updateGraphDelay = 0;
+    final private static long updateGraphInterval = 5000;
+
+    /* Class debuggig tag. */
+    static final private String TAG = "traffic_graph";
+
+    static private Long intersection_id;
+    static private Intersection intersection;
+    static private StreetSmartClient client;
+    private static UpdateGraphTask performGraphUpdate = null;
+    private static boolean running = true;
 
 
     public TrafficGraph() {
         // Empty constructor --use newInstance defined below
     }
 
-    public static TrafficGraph newInstance(String intersection_name) {
+    public static TrafficGraph newInstance(Intersection intersection_to_graph) {
+        intersection = intersection_to_graph;
+
+        /* Build graph. */
         TrafficGraph frag = new TrafficGraph();
         Bundle args = new Bundle();
-        args.putString("title", intersection_name);
-        frag.intersectionName = intersection_name;
+
+        /* Set title. */
+        args.putString("title", intersection.getIntersectionName());
         frag.setArguments(args);
+        client = new StreetSmartClient();
+
+        /* Set update timer. */
+        initGraphUpdateTimer();
         return frag;
+    }
+
+    /**
+     * Initalizes timer (by making the first call).
+     */
+    private static void initGraphUpdateTimer() {
+        Log.i(TAG, "running callMapUpdate");
+        callMapUpdate();
+    }
+
+    /**
+     * Class performs async updates to graph.
+     *
+     * Runs every <code>updateGraphInterval</code>ms after an initial delay of
+     * <code>updateMapDelay</code>. The StreetSmartAPI is queried for new data, this task occurs
+     * asynchronously. The graph is updated based on stale data from the previous collection
+     * attempt.
+     */
+    public static class UpdateGraphTask extends AsyncTask<Intersection, Void, Void> {
+
+        @Override
+        protected Void doInBackground(Intersection... params) {
+
+            if (!isCancelled()) {
+                Log.i(TAG, "task still running");
+                /* Submit new api request. Update graph. */
+            } else {
+                Log.i(TAG, "task cancelled");
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onCancelled() {
+            Log.i(TAG, "onCancelled runs.");
+        }
+
+    }
+
+    /*
+     * Actual async map update function. Makes use of the UpdadeGraphTask AsyncTask.
+     */
+    private static void callMapUpdate() {
+        final Handler handler = new Handler();
+        Timer timer = new Timer();
+
+        /* Set up task. */
+        TimerTask graphUpdateTimer = new TimerTask() {
+            @Override
+            public void run() {
+                handler.post(new Runnable() {
+                    public void run() {
+                        try {
+                            performGraphUpdate = new UpdateGraphTask();
+                            performGraphUpdate.execute();
+                        } catch (Exception e) {
+                            Log.i(TAG, "task failed");
+                            e.printStackTrace();
+                        }
+                    }
+                });
+            }
+        };
+
+        /* Schedule task. */
+        timer.schedule(graphUpdateTimer, updateGraphDelay, updateGraphInterval);
     }
 
     @Override
@@ -47,7 +140,7 @@ public class TrafficGraph extends DialogFragment {
 
         // Get textview from the view and set interection name for display
         TextView tv = (TextView) view.findViewById(R.id.traffic_graph_text_id);
-        tv.setText(this.intersectionName);
+        tv.setText(this.intersection.getIntersectionName());
 
         // Create new graph view and add populate with data points for
         // the intersection in question.
@@ -61,6 +154,12 @@ public class TrafficGraph extends DialogFragment {
         });
         // Add the graph to the TrafficGraph dialog
         gv.addSeries(series);
+    }
+
+    @Override
+    public void onDismiss(DialogInterface dialogInterface) {
+        Log.i(TAG, "cancelling");
+        performGraphUpdate.cancel(true);
     }
 
 }
