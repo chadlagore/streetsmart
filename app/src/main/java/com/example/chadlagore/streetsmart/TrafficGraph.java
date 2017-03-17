@@ -43,8 +43,6 @@ public class TrafficGraph extends DialogFragment {
     static private Intersection intersection;
     static private StreetSmartClient client;
     private static TimerTask graphUpdateTimer = null;
-    private static boolean running = true;
-    Queue<DataPoint> pointsToGraph;
 
     public TrafficGraph() {
         // Empty constructor --use newInstance defined below
@@ -72,7 +70,7 @@ public class TrafficGraph extends DialogFragment {
      */
     private static void initGraphUpdateTimer() {
         Log.i(TAG, "running callMapUpdate");
-        callMapUpdate();
+        scheduleMapUpdate();
     }
 
     /**
@@ -99,18 +97,14 @@ public class TrafficGraph extends DialogFragment {
 
             return null;
         }
-
-        @Override
-        protected void onCancelled() {
-            Log.i(TAG, "onCancelled runs.");
-        }
-
     }
 
     /*
-     * Actual async map update function. Makes use of the UpdadeGraphTask AsyncTask.
+     * Schedules a map update timer to run on an asyncronous task.
+     * Called once when the fragent is set up for a new intersection.
+     * The timer is cancelled in OnDismiss.
      */
-    private static void callMapUpdate() {
+    private static void scheduleMapUpdate() {
         final Handler handler = new Handler();
         Timer timer = new Timer();
 
