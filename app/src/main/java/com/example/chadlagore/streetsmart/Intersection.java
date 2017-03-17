@@ -35,6 +35,11 @@ public class Intersection {
     // Current conditions at intersection
     private long last_minute_passthroughs;
 
+    // Thresholds for various levels of busyness
+    public static final long GREEN = 1;
+    public static final long YELLOW = 3;
+    public static final long RED = 5;
+
     /**
      * Constructor. Requires all the parameters that define an intersection.
      * Requests to the server for intersection level data return each of
@@ -78,14 +83,22 @@ public class Intersection {
         LatLng latlng = new LatLng(this.intersection_latituide, this.intersection_longitude);
 
         // create the markers associated with this intersection
-        this.green = mapFragment.addMarker(latlng);
-        this.red = mapFragment.addMarker(latlng);
-        this.yellow = mapFragment.addMarker(latlng);
+        this.green = mapFragment.createMarkerAddToMap(latlng,
+                this.intersection_id,
+                this.getIntersectionName(),
+                GREEN);
 
-        // initially set the to invisible
-        this.green.setVisible(false);
-        this.yellow.setVisible(false);
-        this.red.setVisible(false);
+        // now the red one..
+        this.red = mapFragment.createMarkerAddToMap(latlng,
+                this.intersection_id,
+                this.getIntersectionName(),
+                RED);
+
+        // and the yellow one ...
+        this.yellow = mapFragment.createMarkerAddToMap(latlng,
+                this.intersection_id,
+                this.getIntersectionName(),
+                YELLOW);
 
         this.green.setSnippet(String.valueOf(intersection_id));
         this.yellow.setSnippet(String.valueOf(intersection_id));
@@ -110,7 +123,7 @@ public class Intersection {
 
     /**
      * Name is taken to be the crossroads concatenated together between
-     * the string "at".
+     * the string "at". No guarantee largest street is first.
      *
      * @return String in the form '<crossroad_first> at <crossroad_second>'
      * */
@@ -173,12 +186,19 @@ public class Intersection {
     public void setPassthroughsLastMinute(long passthroughs) {
         this.last_minute_passthroughs = passthroughs;
 
-        if (this.last_minute_passthroughs > 10) {
+        // set the appropriate marker to visible
+        if (this.last_minute_passthroughs > RED) {
             red.setVisible(true);
-        } else if (this.last_minute_passthroughs < 10 && this.last_minute_passthroughs >= 5) {
+            yellow.setVisible(false);
+            green.setVisible(false);
+        } else if (this.last_minute_passthroughs < RED && this.last_minute_passthroughs >= YELLOW) {
             yellow.setVisible(true);
+            red.setVisible(false);
+            green.setVisible(false);
         } else {
             green.setVisible(true);
+            yellow.setVisible(false);
+            red.setVisible(false);
         }
     }
 
