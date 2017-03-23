@@ -31,7 +31,7 @@ public class StreetSmartClient {
     private final String base_url;
 
     /* The log tag */
-    private final String intersection_tag = "intersection_resp";
+    private final String TAG = "intersection_resp";
 
     /* The tag of the next JSON response . */
     private Long nextHash;
@@ -79,8 +79,8 @@ public class StreetSmartClient {
         if (bounds != null) {
             builder.addQueryParameter("lat_lte", String.valueOf(bounds.northeast.latitude))
                     .addQueryParameter("lat_gte", String.valueOf(bounds.southwest.latitude))
-                    .addQueryParameter("lon_lte", String.valueOf(bounds.southwest.longitude))
-                    .addQueryParameter("lon_gte", String.valueOf(bounds.northeast.longitude));
+                    .addQueryParameter("lon_lte", String.valueOf(bounds.northeast.longitude))
+                    .addQueryParameter("lon_gte", String.valueOf(bounds.southwest.longitude));
         }
 
         /* Build the url. */
