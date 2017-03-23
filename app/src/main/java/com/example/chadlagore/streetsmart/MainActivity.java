@@ -35,6 +35,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     Timer updateMapTimer;
     StreetSmartClient streetSmartClient;
     JSONArray intersectionsJSON;
+    String TAG = "main_activity";
 
     boolean stopTimer = false;
     boolean addMarker = true;
@@ -47,8 +48,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     int updateMapTime = 5000; // ms
     int updateMapDelay = 100; // ms
-    double markerLat = 49.000;
-    double markerLon = 122.000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -130,7 +129,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             if (!stopTimer) {
                 runOnUiThread(new Runnable() {
                     public void run() {
-                        collectNewIntersectionData(null);
+                        collectNewIntersectionData(
+                                mapFragment
+                                .getMap()
+                                .getProjection()
+                                .getVisibleRegion()
+                                .latLngBounds
+                        );
                     }
                 });
             }
