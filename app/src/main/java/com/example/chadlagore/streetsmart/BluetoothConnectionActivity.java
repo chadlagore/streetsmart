@@ -256,9 +256,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
          * @return 1 if an error occurred attempting to establish a connection, 0 on success.
          */
         protected Integer doInBackground(String ...params) {
-            //TODO remove
-            Log.d(BLUETOOTH, "Starting asynch connection task.");
-
             /* Search for paired Bluetooth devices */
             Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
 
@@ -302,8 +299,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
          */
         @Override
         protected void onPostExecute(Integer connectionResult) {
-            Log.d(BLUETOOTH, "Done asynch connection task.");
-
             if (connectionResult == NOT_PAIRED) {
                 showBluetoothDialog("You must be paired with a device to perform this action.",
                         "Not Paired");
@@ -318,6 +313,56 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 TextView nameView = (TextView) findViewById(R.id.device_name_value);
                 nameView.setText(deviceName);
             }
+        }
+    }
+
+
+    /**
+     * Asynchronous task for sending the calibrate command to a Bluetooth device.
+     * NOTE: For this task to run the bluetooth adapter must have been initialized correctly.
+     */
+    private class SendCalibrateCommandTask extends AsyncTask<String, String, Integer> {
+        @Override
+        protected Integer doInBackground(String... params) {
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Integer integer) {
+            super.onPostExecute(integer);
+        }
+    }
+
+
+    /**
+     * Asynchronous task for streaming distance readings from a Bluetooth device.
+     * NOTE: For this task to run the bluetooth adapter must have been initialized correctly.
+     */
+    private class StreamDistanceDataTask extends AsyncTask<String, String, Integer> {
+        @Override
+        protected Integer doInBackground(String... params) {
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Integer integer) {
+            super.onPostExecute(integer);
+        }
+    }
+
+    /**
+     * Asynchronous task for requesting adn receiving status information from a Bluetooth device.
+     * NOTE: For this task to run the bluetooth adapter must have been initialized correctly.
+     */
+    private class GetDeviceStateTask extends AsyncTask<String, String, Integer> {
+        @Override
+        protected Integer doInBackground(String... params) {
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Integer integer) {
+            super.onPostExecute(integer);
         }
     }
 }
