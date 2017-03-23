@@ -1,11 +1,14 @@
 package com.example.chadlagore.streetsmart;
 
 import android.app.Activity;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.ParcelUuid;
 import android.support.v7.app.ActionBar;
@@ -29,18 +32,23 @@ import static com.example.chadlagore.streetsmart.R.id.bluetooth_connection_toolb
 public class BluetoothConnectionActivity extends AppCompatActivity {
 
     /* Some variables we will need access to throughout this activity */
-    private final static int REQUEST_ENABLE_BT = 1;
-    private BluetoothAdapter bluetoothAdapter = null;
-    private BluetoothSocket BTSocket = null;
+    private static BluetoothAdapter bluetoothAdapter = null;
+    private static BluetoothSocket BTSocket = null;
     private InputStream inputStream = null;
     private OutputStream outputStream = null;
+    protected FragmentTransaction fragmentTransaction = null;
     private byte[] inputBuffer = null;
     private String dataReceived = "";
-    private static final String BLUETOOTH = "BLUETOOTH";
+
+    /* Constants */
+    private final int REQUEST_ENABLE_BT = 1;
+    private final String BLUETOOTH = "BLUETOOTH";
+    private final String BTConnectionTag = "BT_CONNECTION";
 
 
     /**
-     * This is run when an object of this class is instantiated
+     * This is run when another activity calls startActivity() or startActivityForResult() with this
+     * activity.
      * @param savedInstanceState
      */
     @Override
@@ -55,6 +63,10 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         setSupportActionBar(appToolbar);
         ActionBar actionBar = getSupportActionBar();
         actionBar.setDisplayHomeAsUpEnabled(true);
+
+        /* Set up the fragment manager and transaction */
+        FragmentManager fragmentManager = getFragmentManager();
+        fragmentTransaction = fragmentManager.beginTransaction();
 
         /* Create a Bluetooth Adapter */
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -74,8 +86,9 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                 startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
             } else {
-                /* Bluetooth is enabled, check for devices */
-                establishConnection();
+                /* Bluetooth is enabled, establish connection */
+                EstablishConnectionTask task = new EstablishConnectionTask();
+                task.execute();
             }
         }
     }
@@ -88,8 +101,9 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
      */
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == Activity.RESULT_OK) {
-            /* The user gave us Bluetooth permissions! YAY! */
-           establishConnection();
+            /* The user gave us Bluetooth permissions! YAY! Establish connection. */
+            EstablishConnectionTask task = new EstablishConnectionTask();
+            task.execute();
         } else {
             /* The user would not grant us Bluetooth permissions */
             showBluetoothDialog("Sorry, you must grant Bluetooth permissions to connect to " +
@@ -100,11 +114,11 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
 
     /**
-     * Show dialog box telling user bluetooth is not available
-     * @param message
-     * @param title
+     * Show dialog box telling user bluetooth is not available.
+     * @param message the message to put in the dialog box.
+     * @param title the title of the dialog box.
      */
-    private void showBluetoothDialog(String message, String title) {
+    protected void showBluetoothDialog(String message, String title) {
         /* Instantiate an AlertDialog. Builder with its constructor */
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage(message).setTitle(title);
@@ -134,58 +148,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         destroyConnection();
-    }
-
-
-    private void establishConnection() {
-        ParcelUuid deviceUUID = ParcelUuid.fromString("00000000-0000-0000-0000-000000000000");
-        String deviceName = "NONE";
-
-         /* Search for paired Bluetooth devices */
-        Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
-
-        if (pairedDevices.isEmpty()) {
-            /* We are not paired with a device */
-            showBluetoothDialog("You must be paired with a device to perform this action.",
-                    "Not Paired");
-            return;
-        } else {
-            /* We are already paired */
-            for (BluetoothDevice device : pairedDevices) {
-                /*
-                 * Assume this is the one we want to connect to and
-                 * attempt to establish a connection
-                 */
-                try {
-                    deviceUUID = device.getUuids()[0];
-                    deviceName = device.getName();
-                    BTSocket = device.createRfcommSocketToServiceRecord(deviceUUID.getUuid());
-                    /* We connected successfully, don't connect to anything else */
-                    break;
-                } catch (IOException e) {
-                    /* Try another device */
-                    continue;
-                }
-            }
-            bluetoothAdapter.cancelDiscovery();
-
-            /* Try connect to the device */
-            try {
-                BTSocket.connect(); /* WARNING: this is a blocking call */
-            } catch (IOException e) {
-                showBluetoothDialog("Sorry, an error occurred while attempting to connect to " +
-                "the remote device. Please make sure you are paired with the correct device.\n",
-                        "Bluetooth Connection Failure");
-                return;
-            }
-
-            TextView uuidView = (TextView) findViewById(R.id.uuid_value);
-            uuidView.setText(deviceUUID.toString());
-            TextView nameView = (TextView) findViewById(R.id.device_name_value);
-            nameView.setText(deviceName);
-
-            manageConnection();
-        }
     }
 
 
@@ -274,5 +236,88 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+
+    /**
+     * Asynchronous task for establishing a connection with a Bluetooth device.
+     * NOTE: For this task to run the bluetooth adapter must have been initialized correctly.
+     */
+    private class EstablishConnectionTask extends AsyncTask<String, String, Integer> {
+        private final int CONNECTION_SUCCESS = 0;
+        private final int NOT_PAIRED = 1;
+        private final int CONNECTION_ERROR = 2;
+        private ParcelUuid deviceUUID;
+        private String deviceName;
+
+        /**
+         * Implcitly called when execute() is called on an AsynchTask of this type.
+         * @param params should just be void
+         * @return 1 if an error occurred attempting to establish a connection, 0 on success.
+         */
+        protected Integer doInBackground(String ...params) {
+            //TODO remove
+            Log.d(BLUETOOTH, "Starting asynch connection task.");
+
+            /* Search for paired Bluetooth devices */
+            Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
+
+            if (pairedDevices.isEmpty()) {
+                /* We are not paired with a device */
+                return NOT_PAIRED;
+            } else {
+                /* We are already paired */
+                for (BluetoothDevice device : pairedDevices) {
+                    /*
+                     * Assume this is the one we want to connect to and
+                     * attempt to establish a connection
+                     */
+                    try {
+                        deviceUUID = device.getUuids()[0];
+                        deviceName = device.getName();
+                        BTSocket = device.createRfcommSocketToServiceRecord(deviceUUID.getUuid());
+                        /* We connected successfully, don't connect to anything else */
+                        break;
+                    } catch (IOException e) {
+                        /* Try another device */
+                        continue;
+                    }
+                }
+                bluetoothAdapter.cancelDiscovery();
+
+                /* Try connect to the device */
+                try {
+                    BTSocket.connect(); /* WARNING: this is a blocking call */
+                } catch (IOException e) {
+                    return CONNECTION_ERROR;
+                }
+
+                return CONNECTION_SUCCESS;
+            }
+        }
+
+        /**
+         * Implicitly called when the task is done executing. This will update the UI with the
+         * device UUID and name.
+         */
+        @Override
+        protected void onPostExecute(Integer connectionResult) {
+            Log.d(BLUETOOTH, "Done asynch connection task.");
+
+            if (connectionResult == NOT_PAIRED) {
+                showBluetoothDialog("You must be paired with a device to perform this action.",
+                        "Not Paired");
+            } else if (connectionResult == CONNECTION_ERROR) {
+                showBluetoothDialog("Sorry, an error occurred while attempting to connect to " +
+                                "the remote device. Please make sure you are paired with the " +
+                                "correct device.\n",
+                        "Bluetooth Connection Failure");
+            } else {
+                TextView uuidView = (TextView) findViewById(R.id.uuid_value);
+                uuidView.setText(deviceUUID.toString());
+                TextView nameView = (TextView) findViewById(R.id.device_name_value);
+                nameView.setText(deviceName);
+            }
+        }
     }
 }
