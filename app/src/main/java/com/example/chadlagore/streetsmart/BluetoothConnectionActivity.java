@@ -44,6 +44,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     private final int REQUEST_ENABLE_BT = 1;
     private final String BLUETOOTH = "BLUETOOTH";
     private final String BTConnectionTag = "BT_CONNECTION";
+    private final String CALIBRATE = "C";
 
 
     /**
@@ -226,7 +227,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 }
 
                 if (inputBuffer[0] == '\n' && started) {
-                    dataReceived = dataReceived.replace("$", "");
+                    dataReceived = dataReceived.replace("$", "").replace("\n","");
                     return dataReceived;
                 }
             } catch (IOException e) {
@@ -338,14 +339,35 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
      * NOTE: For this task to run the bluetooth adapter must have been initialized correctly.
      */
     private class SendCalibrateCommandTask extends AsyncTask<String, String, Integer> {
+        private final int CALIBRATION_SUCCESS = 0;
+        private final int NOT_CALIBRATED = 1;
+        boolean ret = true;
+
+        /**
+         * Implcitly called when execute() is called on an AsynchTask of this type.
+         * @param params should just be void
+         * @return 1 if an error occurred attempting to establish a connection, 0 on success.
+         */
         @Override
         protected Integer doInBackground(String... params) {
-            return null;
+            /* Send command to bluetooth for calibration of distance sensor via NIOS */
+            ret = sendString(CALIBRATE);
+
+            if(ret == false)
+              /* Calibration unsuccessful */
+              return NOT_CALIBRATED;
+            else
+                return CALIBRATION_SUCCESS;
         }
 
+        /**
+         * Implicitly called when the task is done executing. This will update the UI with the
+         * device UUID and name.
+         */
         @Override
-        protected void onPostExecute(Integer integer) {
-            super.onPostExecute(integer);
+        protected void onPostExecute(Integer calibrateResult) {
+            if(calibrateResult == NOT_CALIBRATED)
+                showBluetoothDialog("Calibration command was not recieved.", "Not Recieved");
         }
     }
 
@@ -375,6 +397,8 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         protected Integer doInBackground(String... params) {
             return null;
         }
+
+
 
         @Override
         protected void onPostExecute(Integer integer) {
