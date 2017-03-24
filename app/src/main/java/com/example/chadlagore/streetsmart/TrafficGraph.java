@@ -36,7 +36,7 @@ import java.util.TimerTask;
 public class TrafficGraph extends DialogFragment {
 
     final private static long updateGraphDelay = 0;
-    final private static long updateGraphInterval = 1000;
+    final private static long updateGraphInterval = 750;
 
     /* Class debuggig tag. */
     static final private String TAG = "traffic_graph";
