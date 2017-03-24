@@ -227,7 +227,9 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 }
 
                 if (inputBuffer[0] == '\n' && started) {
+
                     dataReceived = dataReceived.replace("$", "").replace("\n","");
+
                     return dataReceived;
                 }
             } catch (IOException e) {
@@ -393,16 +395,54 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
      * NOTE: For this task to run the bluetooth adapter must have been initialized correctly.
      */
     private class GetDeviceStateTask extends AsyncTask<String, String, Integer> {
+
+        /**
+         * Send the Request Device Status Command
+         * @param params
+         * @return 1 on success and 0 on failure
+         */
         @Override
         protected Integer doInBackground(String... params) {
-            return null;
+            if (sendString("S")) {
+                return 1;
+            }
+            return 0;
         }
 
 
 
         @Override
-        protected void onPostExecute(Integer integer) {
-            super.onPostExecute(integer);
+        protected void onPostExecute(Integer result) {
+            if (result == 1) {
+                /* Success */
+                String data = receiveString(2000);
+
+                if (data == null) {
+                    showBluetoothDialog("Could not receive data from remote device.",
+                            "Bluetooth Error");
+                    return;
+                }
+
+                String[] values = data.split(",");
+
+                String distance = values[0];
+                String wifiStatus = values[1];
+                String calibrationDist = values[2];
+                String latitude = values[3];
+                String longitude = values[4];
+
+                TextView distView = (TextView) findViewById(R.id.dist_reading_value);
+                TextView wifiView = (TextView) findViewById(R.id.wifi_status_value);
+                TextView calDistView = (TextView) findViewById(R.id.calibration_dist_value);
+                TextView GPSView = (TextView) findViewById(R.id.gps_data_value);
+
+                distView.setText(distance);
+                wifiView.setText(wifiStatus);
+                calDistView.setText(calibrationDist);
+                GPSView.setText(latitude + ", " + longitude);
+            } else {
+                showBluetoothDialog("Failed to send command to remote device.", "Bluetooth Error");
+            }
         }
     }
 }
