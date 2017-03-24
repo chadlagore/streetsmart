@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.ParcelUuid;
+import android.support.annotation.Nullable;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -36,7 +37,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     private static BluetoothSocket BTSocket = null;
     private InputStream inputStream = null;
     private OutputStream outputStream = null;
-    protected FragmentTransaction fragmentTransaction = null;
     private byte[] inputBuffer = null;
     private String dataReceived = "";
 
@@ -64,10 +64,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         ActionBar actionBar = getSupportActionBar();
         actionBar.setDisplayHomeAsUpEnabled(true);
 
-        /* Set up the fragment manager and transaction */
-        FragmentManager fragmentManager = getFragmentManager();
-        fragmentTransaction = fragmentManager.beginTransaction();
-
         /* Create a Bluetooth Adapter */
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
@@ -87,6 +83,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
             } else {
                 /* Bluetooth is enabled, establish connection */
+                getSocketStreams();
                 EstablishConnectionTask task = new EstablishConnectionTask();
                 task.execute();
             }
@@ -152,9 +149,10 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
 
     /**
-     * Sends and received data from the remote device asynchronously
+     * Initializes the input and output streams for the current BTSocket
+     * Precondition: BTSocket is not null
      */
-    private void manageConnection() {
+    private void getSocketStreams() {
         /* Get input and output streams from Bluetooth Socket */
         try {
             inputStream = BTSocket.getInputStream();
@@ -170,10 +168,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                     "remote device.", "Bluetooth Output Socket Error");
             return;
         }
-
-        // TODO: After demo I'll have to fix this
-        receiveString();
-        displayData(dataReceived);
     }
 
 
@@ -205,37 +199,59 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     }
 
 
-    private void receiveString() {
-        BluetoothConnectionActivity.this.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                inputBuffer = new byte[2048];
-                dataReceived = "";
-                boolean started = false;
-                int bytes_read = 0;
+    /**
+     * Receive a string from the remote Bluetooth device we are currently connected to
+     * Precondition: must be connected to the remote device and the inputStream can't be null
+     * WARNING: this function is blocking! Make sure it is called in a non-main thread!
+     * @param timeoutMillis timeout for this function in milliseconds. Pass 0 for no timeout.
+     * @return the string received if it was received in full within the timeout period,
+     * otherwise return null
+     */
+    @Nullable
+    private String receiveString(int timeoutMillis) {
+        inputBuffer = new byte[2048];
+        dataReceived = "";
+        boolean started = false;
+        int bytes_read;
 
-                /* Keep listening for input until error occurs */
-                while (true) {
-                    try {
-                        bytes_read = inputStream.read(inputBuffer);
+        long startTime = System.currentTimeMillis();
 
-                        if (inputBuffer[0] == '$' || started) {
-                            started = true;
-                            dataReceived += new String(inputBuffer, 0, bytes_read);
-                        }
+        while (true) {
+            try {
+                bytes_read = inputStream.read(inputBuffer);
 
-                        if (inputBuffer[0] == '\n' && started) {
-                            dataReceived = dataReceived.replace("$", "");
-                            return;
-                        }
-                    } catch (IOException e) {
-                        showBluetoothDialog("The remote device disconnected unexpectedly.",
-                                "Bluetooth Socket Error");
-                        break;
-                    }
+                if (inputBuffer[0] == '$' || started) {
+                    started = true;
+                    dataReceived += new String(inputBuffer, 0, bytes_read);
                 }
+
+                if (inputBuffer[0] == '\n' && started) {
+                    dataReceived = dataReceived.replace("$", "");
+                    return dataReceived;
+                }
+            } catch (IOException e) {
+                return null;
             }
-        });
+
+            if (timeoutMillis != 0 &&
+                    System.currentTimeMillis() - startTime > timeoutMillis) return null;
+        }
+    }
+
+
+    /**
+     * Tries to send the String data to the remote Bluetooth device
+     * Precondition: outputStream has been initialized properly
+     * @param data
+     * @return true on success and false on failure
+     */
+    private boolean sendString(String data) {
+        try {
+            outputStream.write(("$" + data + "\n").getBytes());
+        } catch (IOException e) {
+            return false;
+        }
+        return true;
     }
 
 
