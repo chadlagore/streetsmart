@@ -39,11 +39,11 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     private OutputStream outputStream = null;
     private byte[] inputBuffer = null;
     private String dataReceived = "";
+    protected boolean streaming = false;
 
     /* Constants */
     private final int REQUEST_ENABLE_BT = 1;
     private final String BLUETOOTH = "BLUETOOTH";
-    private final String BTConnectionTag = "BT_CONNECTION";
 
 
     /**
@@ -355,14 +355,43 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
      * NOTE: For this task to run the bluetooth adapter must have been initialized correctly.
      */
     private class StreamDistanceDataTask extends AsyncTask<String, String, Integer> {
+
+        /**
+         * Send the Request Distance Reading Stream Command
+         * @param params unused
+         * @return 0 on success and 1 on failure
+         */
         @Override
         protected Integer doInBackground(String... params) {
-            return null;
+            if (sendString("D")) {
+                String data;
+                streaming = true;
+
+                while (streaming) {
+                    data = receiveString(2000);
+                    if (data == null) {
+                        return 1;
+                    }
+
+                    publishProgress(data);
+                }
+            }
+            return 0;
         }
 
         @Override
-        protected void onPostExecute(Integer integer) {
-            super.onPostExecute(integer);
+        protected void onProgressUpdate(String... data) {
+            // TODO: update UI with data
+        }
+
+        @Override
+        protected void onPostExecute(Integer result) {
+            streaming = false;
+
+            if (result == 1) {
+                showBluetoothDialog("Failed to receive data from remote device.",
+                        "Bluetooth Error");
+            }
         }
     }
 
@@ -374,8 +403,8 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
         /**
          * Send the Request Device Status Command
-         * @param params
-         * @return 1 on success and 0 on failure
+         * @param params unused
+         * @return 0 on success and 1 on failure
          */
         @Override
         protected Integer doInBackground(String... params) {
@@ -387,7 +416,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Integer result) {
-            if (result == 1) {
+            if (result == 0) {
                 /* Success */
                 String data = receiveString(2000);
 
