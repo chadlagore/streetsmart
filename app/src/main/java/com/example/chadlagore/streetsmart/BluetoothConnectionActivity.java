@@ -1,8 +1,6 @@
 package com.example.chadlagore.streetsmart;
 
 import android.app.Activity;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -38,13 +36,11 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     private InputStream inputStream = null;
     private OutputStream outputStream = null;
     private byte[] inputBuffer = null;
-    private String dataReceived = "";
     protected boolean streaming = false;
 
     /* Constants */
     private final int REQUEST_ENABLE_BT = 1;
     private final String BLUETOOTH = "BLUETOOTH";
-
 
     /**
      * This is run when another activity calls startActivity() or startActivityForResult() with this
@@ -83,11 +79,34 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
             } else {
                 /* Bluetooth is enabled, establish connection */
-                getSocketStreams();
                 EstablishConnectionTask task = new EstablishConnectionTask();
                 task.execute();
             }
         }
+    }
+
+    /**
+     * Called when the "CALIBRATE" button is pressed
+     */
+    public void calibrate() {
+        SendCalibrateCommandTask task = new SendCalibrateCommandTask();
+        task.execute();
+    }
+
+    /**
+     * Called when the "STREAM DATA" button is pressed
+     */
+    public void stream() {
+        StreamDistanceDataTask task = new StreamDistanceDataTask();
+        task.execute();
+    }
+
+    /**
+     * Called when the "GET DEVICE STATUS" button is pressed
+     */
+    public void status() {
+        GetDeviceStateTask task = new GetDeviceStateTask();
+        task.execute();
     }
 
 
@@ -137,14 +156,20 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     }
 
 
-
     /**
      * This method is called when the object of this class is destroyed
      */
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        destroyConnection();
+
+        if (BTSocket != null) {
+            try {
+                BTSocket.close();
+            } catch (IOException e) {
+                /* If this fails the socket was already closed or destroyed, so nothing to do */
+            }
+        }
     }
 
 
@@ -172,34 +197,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
 
     /**
-     * Just closes the Bluetooth connection with the remote device by closing the socket
-     */
-    private void destroyConnection() {
-        if (BTSocket != null) {
-            try {
-                BTSocket.close();
-            } catch (IOException e) {
-                /* If this fails the socket was already closed or destroyed, so nothing to do */
-            }
-        }
-    }
-
-
-    /**
-     * Display the String data on the screen
-     * @param data
-     */
-    private void displayData(String data) {
-        Log.i(BLUETOOTH, "Received Data: " + data);
-        TextView receivedDataView = (TextView) findViewById(R.id.received_data);
-        TextView receivedDistValue = (TextView) findViewById(R.id.dist_reading_value);
-        receivedDataView.setVisibility(TextView.VISIBLE);
-        receivedDataView.setText("Received Data: " + data);
-        receivedDistValue.setText(data);
-    }
-
-
-    /**
      * Receive a string from the remote Bluetooth device we are currently connected to
      * Precondition: must be connected to the remote device and the inputStream can't be null
      * WARNING: this function is blocking! Make sure it is called in a non-main thread!
@@ -210,7 +207,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     @Nullable
     private String receiveString(int timeoutMillis) {
         inputBuffer = new byte[2048];
-        dataReceived = "";
+        String dataReceived = "";
         boolean started = false;
         int bytes_read;
 
@@ -226,8 +223,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 }
 
                 if (inputBuffer[0] == '\n' && started) {
-                    dataReceived = dataReceived.replace("$", "").replace("\n", "");
-                    return dataReceived;
+                    return dataReceived.replace("$", "").replace("\n","");
                 }
             } catch (IOException e) {
                 return null;
@@ -289,6 +285,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                         deviceUUID = device.getUuids()[0];
                         deviceName = device.getName();
                         BTSocket = device.createRfcommSocketToServiceRecord(deviceUUID.getUuid());
+                        getSocketStreams();
                         /* We connected successfully, don't connect to anything else */
                         break;
                     } catch (IOException e) {
@@ -338,14 +335,47 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
      * NOTE: For this task to run the bluetooth adapter must have been initialized correctly.
      */
     private class SendCalibrateCommandTask extends AsyncTask<String, String, Integer> {
+        private final int CALIBRATION_SUCCESS = 0;
+        private final int NOT_CALIBRATED = 1;
+
+        /**
+         * Implcitly called when execute() is called on an AsynchTask of this type.
+         * @param params should just be void
+         * @return 1 if an error occurred attempting to establish a connection, 0 on success.
+         */
         @Override
         protected Integer doInBackground(String... params) {
-            return null;
+            /* Send command to bluetooth for calibration of distance sensor via NIOS */
+            if(!sendString("C")) {
+              /* Calibration unsuccessful */
+                return NOT_CALIBRATED;
+            }
+            else {
+                return CALIBRATION_SUCCESS;
+            }
         }
 
+        /**
+         * Implicitly called when the task is done executing. This will update the UI with the
+         * device UUID and name.
+         */
         @Override
-        protected void onPostExecute(Integer integer) {
-            super.onPostExecute(integer);
+        protected void onPostExecute(Integer calibrateResult) {
+            if (calibrateResult == CALIBRATION_SUCCESS){
+                String calibrationDist = receiveString(2000);
+
+                if(calibrationDist == null) {
+                    showBluetoothDialog("No calibration distance received.", "Bluetooth Error");
+                    return;
+                }
+
+                /* Update calibration distance on UI */
+                TextView calDistView = (TextView) findViewById(R.id.calibration_dist_value);
+                calDistView.setText(calibrationDist);
+            } else {
+                showBluetoothDialog("Failed to send calibration command to remote device.",
+                        "Bluetooth Error");
+            }
         }
     }
 
@@ -355,6 +385,8 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
      * NOTE: For this task to run the bluetooth adapter must have been initialized correctly.
      */
     private class StreamDistanceDataTask extends AsyncTask<String, String, Integer> {
+        private final int SUCCESS = 0;
+        private final int FAILURE = 1;
 
         /**
          * Send the Request Distance Reading Stream Command
@@ -370,13 +402,15 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 while (streaming) {
                     data = receiveString(2000);
                     if (data == null) {
-                        return 1;
+                        return FAILURE;
                     }
 
                     publishProgress(data);
                 }
+            } else {
+                return FAILURE;
             }
-            return 0;
+            return SUCCESS;
         }
 
         @Override
@@ -388,7 +422,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         protected void onPostExecute(Integer result) {
             streaming = false;
 
-            if (result == 1) {
+            if (result == FAILURE) {
                 showBluetoothDialog("Failed to receive data from remote device.",
                         "Bluetooth Error");
             }
@@ -400,6 +434,8 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
      * NOTE: For this task to run the bluetooth adapter must have been initialized correctly.
      */
     private class GetDeviceStateTask extends AsyncTask<String, String, Integer> {
+        private final int SUCCESS = 0;
+        private final int FAILURE = 1;
 
         /**
          * Send the Request Device Status Command
@@ -409,14 +445,16 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         @Override
         protected Integer doInBackground(String... params) {
             if (sendString("S")) {
-                return 1;
+                return SUCCESS;
             }
-            return 0;
+            return FAILURE;
         }
+
+
 
         @Override
         protected void onPostExecute(Integer result) {
-            if (result == 0) {
+            if (result == SUCCESS) {
                 /* Success */
                 String data = receiveString(2000);
 
