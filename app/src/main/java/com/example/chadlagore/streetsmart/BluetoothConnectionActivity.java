@@ -355,11 +355,13 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             /* Send command to bluetooth for calibration of distance sensor via NIOS */
             ret = sendString(CALIBRATE);
 
-            if(ret == false)
+            if(ret == false) {
               /* Calibration unsuccessful */
-              return NOT_CALIBRATED;
-            else
+                return NOT_CALIBRATED;
+            }
+            else {
                 return CALIBRATION_SUCCESS;
+            }
         }
 
         /**
@@ -368,8 +370,19 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
          */
         @Override
         protected void onPostExecute(Integer calibrateResult) {
-            if(calibrateResult == NOT_CALIBRATED)
-                showBluetoothDialog("Calibration command was not recieved.", "Not Recieved");
+            if(calibrateResult == CALIBRATION_SUCCESS){
+                String calibrationDist = receiveString(2000);
+
+                if(calibrationDist == null) {
+                    showBluetoothDialog("No calibration distance recieved.", "Bluetooth Error");
+                }
+                /* Update calibration distance on UI */
+                TextView calDistView = (TextView) findViewById(R.id.calibration_dist_value);
+                calDistView.setText(calibrationDist);
+            }
+            else {
+                showBluetoothDialog("Failed to send calibration command to remote device.", "Bluetooth Error");
+            }
         }
     }
 
