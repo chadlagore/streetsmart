@@ -87,6 +87,8 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
 
     /*
      * Update the map type given a mapTypeId.
+     *
+     * @param int mapTypeId. An integer corresponding to one of the map types in MAP_TYPES.
      */
     public void changeMapType(int mapTypeId) {
         Log.i("gmaps", "Updating map type.");
@@ -94,9 +96,11 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
     }
 
     /*
-     * Update camera for new position.
+     * Update camera with new location.
+     *
+     * @param Location location !=null a new location on to orient the camera on.
      */
-    private void handleNewLocation( Location location ) {
+    private void handleNewLocation(Location location) {
         Log.i("gmaps", "Building camera position.");
         Log.i("gmaps", "Lat: " + location.getLatitude());
         Log.i("gmaps", "Lon: " + location.getLongitude());
@@ -117,7 +121,10 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
 
 
     /*
-     * Connects to GoogleApiClient, create LocationRequest.
+     * Runs automatically on map startup.
+     *
+     * Connects to GoogleApiClient, creates LocationRequest
+     * object to find user location..
      */
     @Override
     public void onStart() {
@@ -132,6 +139,10 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
                 .setFastestInterval(1 * 1000); // 1 second, in milliseconds
     }
 
+    /**
+     * On map pause, we disconnect from the Google Maps API.
+     * Reduces data consumption.
+     */
     @Override
     public void onPause() {
         super.onPause();
@@ -142,6 +153,10 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
         }
     }
 
+    /**
+     * Returns the last location collected by the LocationServices object.
+     * @return Location is null when user has not enabled their location.
+     */
     public Location getLastLocation() {
         return LocationServices
                 .FusedLocationApi
@@ -300,7 +315,7 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
     }
 
     /*
-     * Response to location change.
+     * Response to location change. Simply call handleNewLocation method.
      */
     @Override
     public void onLocationChanged(Location location) {
