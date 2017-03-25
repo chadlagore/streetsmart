@@ -46,8 +46,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     // define the elements of this array
     private HashMap<Long, Intersection> intersections = new HashMap<Long, Intersection>();
 
-    int updateMapTime = 5000; // ms
-    int updateMapDelay = 100; // ms
+    int updateMapTime = 1000; // ms
+    int updateMapDelay = 250; // ms
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,9 +55,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         setContentView(R.layout.activity_main);
 
         /* Expand the toolbar at the top of the screen */
+        Log.i(TAG, "setting toolbar");
         Toolbar appToolbar = (Toolbar) findViewById(app_toolbar);
         setSupportActionBar(appToolbar);
 
+        Log.i(TAG, "adding device button");
         /* Add "DEVICE" button event listener */
         final Button deviceConnect = (Button) findViewById(R.id.deviceConnect);
         deviceConnect.setOnClickListener(new View.OnClickListener() {
@@ -70,12 +72,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         /** Initialize the map overlay timer. */
         if (addMarker) {
+            Log.i(TAG, "initializing overlay timer");
             initMapUpdateTimer();
         }
 
+        Log.i(TAG, "getting map");
         /** Get the new map fragment. */
         mapFragment = getMapFragement();
+        mapFragment.getMapAsync(this);
 
+        Log.i(TAG, "ss client");
         /** Instantiate the street smart API client. */
         streetSmartClient = new StreetSmartClient();
     }
@@ -83,6 +89,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     /* Inflate toolbar menu */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        Log.i(TAG, "inflating toolbar");
         getMenuInflater().inflate(R.menu.menu, menu);
         return true;
     }
@@ -94,14 +101,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Timer updateMapTimer = new Timer();
         UpdateMapTask my_task = new UpdateMapTask();
         updateMapTimer.schedule(my_task, updateMapDelay, updateMapTime);
+        Log.i(TAG, "maps overlay timer scheduled");
     }
 
     /**
      * Asyncronously gets access to map.
      */
     @Override
-    public void onMapReady(GoogleMap googleMap) {
-        googleMap = googleMap;
+    public void onMapReady(final GoogleMap googleMap) {
+        Log.i(TAG, "map ready");
+        this.googleMap = googleMap;
+        googleMap.setMyLocationEnabled(true);
         initMapUpdateTimer();
     }
 
@@ -130,8 +140,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 runOnUiThread(new Runnable() {
                     public void run() {
                         collectNewIntersectionData(
-                                mapFragment
-                                .getMap()
+                                googleMap
                                 .getProjection()
                                 .getVisibleRegion()
                                 .latLngBounds
@@ -151,7 +160,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      * on how busy they have been during the last 30 seconds.
      */
     private void updateMapMarkers() {
-        Log.i("gmaps_timer", "updating map markers");
+//        Log.i(TAG, "updating map markers");
 
         for (int i = 0; i < intersectionsJSON.length(); i++) {
 
