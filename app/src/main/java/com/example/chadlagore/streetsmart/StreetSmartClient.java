@@ -91,6 +91,9 @@ public class StreetSmartClient {
                 .url(url)
                 .build();
 
+        /* Uncomment this to inspect the url being sent. */
+//        Log.i(TAG, "queuing query " + request.url().toString());
+
         /* Queue the request, handle failure and response async. */
         client.newCall(request).enqueue(new Callback() {
 
@@ -106,6 +109,8 @@ public class StreetSmartClient {
                 } else {
                     try {
                         responseJSON = new JSONArray(response.body().string());
+                        /* Uncomment this to see the data in the LogCat! */
+//                        Log.i(TAG, responseJSON.toString());
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
