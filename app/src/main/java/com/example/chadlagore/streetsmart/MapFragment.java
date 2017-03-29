@@ -1,20 +1,9 @@
 package com.example.chadlagore.streetsmart;
 
-import android.Manifest;
-import android.app.Dialog;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.support.v4.app.DialogFragment;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
 
@@ -34,9 +23,6 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import java.util.HashMap;
-import java.util.List;
-
 /**
  * Created by chadlagore on 2017-03-10.
  */
@@ -47,7 +33,8 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
     GoogleMap.OnMapLongClickListener,
     GoogleMap.OnMapClickListener,
     GoogleMap.OnMarkerClickListener,
-    LocationListener {
+    LocationListener,
+    OnMapReadyCallback {
 
     private static final String TAG = "map_fragment";
     private GoogleApiClient mGoogleApiClient;
@@ -55,6 +42,7 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
     private LocationManager mLocationManager;
     private LocationRequest mLocationRequest;
     private BitmapFactory bf;
+    private GoogleMap googleMap;
 
     protected final int[] MAP_TYPES = {
             GoogleMap.MAP_TYPE_SATELLITE,
@@ -66,8 +54,6 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
 
     // initial location
     private int curMapTypeIndex = 1;
-    private double vancouverLat = 49.2827;
-    private double vancouverLon = 123.1207;
 
     /*
      * Connect to GoogleMapsAPI.
@@ -75,14 +61,26 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
     @Override
     public void onConnected(Bundle bundle) {
         mCurrentLocation = getLastLocation();
+        getMapAsync(this);
+    }
+
+    /**
+     * Asyncronously gets access to map.
+     */
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        this.googleMap = googleMap;
+        Log.i(TAG, "map ready.");
 
         if (mCurrentLocation != null) {
             handleNewLocation(mCurrentLocation);
         } else {
-            Log.i("gmaps", "Current location is null, looking up new.");
+            Log.i(TAG, "Current location is null, looking up new.");
             LocationServices.FusedLocationApi.requestLocationUpdates(
-                        mGoogleApiClient, mLocationRequest, this);
+                    mGoogleApiClient, mLocationRequest, this);
         }
+
+        initListeners();
     }
 
     /*
@@ -91,8 +89,8 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
      * @param int mapTypeId. An integer corresponding to one of the map types in MAP_TYPES.
      */
     public void changeMapType(int mapTypeId) {
-        Log.i("gmaps", "Updating map type.");
-        getMap().setMapType(MAP_TYPES[mapTypeId]);
+        Log.i(TAG, "Updating map type.");
+        googleMap.setMapType(MAP_TYPES[mapTypeId]);
     }
 
     /*
@@ -101,22 +99,22 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
      * @param Location location !=null a new location on to orient the camera on.
      */
     private void handleNewLocation(Location location) {
-        Log.i("gmaps", "Building camera position.");
-        Log.i("gmaps", "Lat: " + location.getLatitude());
-        Log.i("gmaps", "Lon: " + location.getLongitude());
+        Log.i(TAG, "Building camera position.");
+        Log.i(TAG, "Lat: " + location.getLatitude());
+        Log.i(TAG, "Lon: " + location.getLongitude());
         CameraPosition position = CameraPosition.builder()
                 .target(new LatLng(location.getLatitude(),
                         location.getLongitude()))
                 .zoom(16f)
                 .build();
 
-        getMap().moveCamera(CameraUpdateFactory
+        googleMap.moveCamera(CameraUpdateFactory
                 .newCameraPosition( position ));
 
-        getMap().setMapType( MAP_TYPES[curMapTypeIndex] );
-        getMap().setTrafficEnabled( true );
-        getMap().setMyLocationEnabled( true );
-        getMap().getUiSettings().setZoomControlsEnabled( true );
+        googleMap.setMapType( MAP_TYPES[curMapTypeIndex] );
+        googleMap.setTrafficEnabled( true );
+        googleMap.setMyLocationEnabled( true );
+        googleMap.getUiSettings().setZoomControlsEnabled( true );
     }
 
 
@@ -128,7 +126,7 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
      */
     @Override
     public void onStart() {
-        Log.i("gmaps", "Starting maps...");
+        Log.i(TAG, "Starting maps...");
         super.onStart();
         mGoogleApiClient.connect();
 
@@ -183,7 +181,7 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
      */
     public Marker createMarkerAddToMap(LatLng latlng, Long id, String title, long color) {
 
-        return getMap().addMarker( new MarkerOptions()
+        return googleMap.addMarker( new MarkerOptions()
             .position(latlng)
             .title(title)
             .flat(false)
@@ -291,27 +289,29 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        Log.i("gmaps", "View created.");
 
         setHasOptionsMenu(true);
 
+        Log.i(TAG, "Getting activity");
         mGoogleApiClient = new GoogleApiClient.Builder(getActivity())
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
                 .build();
-
-        initListeners();
     }
 
     /*
      * Initialize map listeners.
      */
     private void initListeners() {
-        getMap().setOnMarkerClickListener(this);
-        getMap().setOnMapLongClickListener(this);
-        getMap().setOnInfoWindowClickListener( this );
-        getMap().setOnMapClickListener(this);
+        if (googleMap != null) {
+            googleMap.setOnMarkerClickListener(this);
+            googleMap.setOnMapLongClickListener(this);
+            googleMap.setOnInfoWindowClickListener(this);
+            googleMap.setOnMapClickListener(this);
+        } else {
+            Log.i(TAG, "Google maps null, cannot update listeners.");
+        }
     }
 
     /*
