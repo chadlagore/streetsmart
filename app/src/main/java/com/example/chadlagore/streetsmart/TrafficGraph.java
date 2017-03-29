@@ -4,10 +4,13 @@ import android.app.Activity;
 import android.app.DialogFragment;
 import android.app.IntentService;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
+import android.support.annotation.RequiresApi;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,6 +18,7 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.view.View.OnClickListener;
 
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.BarGraphSeries;
@@ -63,6 +67,9 @@ public class TrafficGraph extends DialogFragment {
         args.putString("title", intersection.getIntersectionName());
         frag.setArguments(args);
         client = new StreetSmartClient();
+
+        /* Set intersection id */
+        intersection_id = intersection_to_graph.getIntersectionID();
 
         /* Set update timer. */
 //        scheduleMapUpdate();

@@ -11,6 +11,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.util.Log;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.Button;
 
 import com.google.android.gms.maps.GoogleMap;
@@ -25,7 +26,8 @@ import java.util.TimerTask;
 
 import static com.example.chadlagore.streetsmart.R.id.app_toolbar;
 
-public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,
+    OnClickListener {
     // need to implement onCameraIdleListener
 
     static final int DE1_CONFIG = 1;
@@ -258,6 +260,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     /** Returns map fragment. */
     public MapFragment getMapFragement() {
         return (MapFragment)getSupportFragmentManager().findFragmentById(R.id.map);
+    }
+
+    @Override
+    public void onClick(View view) {
+        Intent i = new Intent(this, HistoricalData.class);
+        startActivity(i);
     }
 
     @Override

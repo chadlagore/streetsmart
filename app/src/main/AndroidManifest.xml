@@ -4,7 +4,7 @@
 
     <uses-feature
         android:glEsVersion="0x00020000"
-        android:required="true"/>
+        android:required="true" />
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -16,21 +16,19 @@
 
     <application
         android:allowBackup="true"
+        android:debuggable="true"
         android:icon="@mipmap/ss_logo"
         android:label="@string/app_name"
+        android:popupTheme="@style/ThemeOverlay.AppCompat.Light"
         android:roundIcon="@mipmap/ss_logo"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.NoActionBar"
-        android:popupTheme="@style/ThemeOverlay.AppCompat.Light"
-        android:debuggable="true">
-
+        android:theme="@style/Theme.AppCompat.NoActionBar">
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
-
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="@string/google_api_key"/>
+            android:value="@string/google_api_key" />
 
         <activity android:name=".MainActivity">
             <intent-filter>
@@ -39,7 +37,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity android:name=".BluetoothConnectionActivity">
             android:parentActivityName=".MainActivity"
 
@@ -48,7 +45,7 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".MainActivity" />
         </activity>
-
+        <activity android:name=".HistoricalData"></activity>
     </application>
 
 </manifest>
