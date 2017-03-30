@@ -15,6 +15,8 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 
 import java.io.IOException;
@@ -37,6 +39,9 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     private OutputStream outputStream = null;
     private byte[] inputBuffer = null;
     protected boolean streaming = false;
+    protected View loader;
+    protected boolean executingCommand = false;
+
 
     /* Constants */
     private final int REQUEST_ENABLE_BT = 1;
@@ -59,6 +64,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         setSupportActionBar(appToolbar);
         ActionBar actionBar = getSupportActionBar();
         actionBar.setDisplayHomeAsUpEnabled(true);
+        loader = findViewById(R.id.progress_wheel);
 
         /* Create a Bluetooth Adapter */
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -88,7 +94,10 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     /**
      * Called when the "CALIBRATE" button is pressed
      */
-    public void calibrate() {
+    public void calibrate(View view) {
+        if (executingCommand) return;
+
+        loader.setVisibility(View.VISIBLE);
         SendCalibrateCommandTask task = new SendCalibrateCommandTask();
         task.execute();
     }
@@ -96,15 +105,31 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     /**
      * Called when the "STREAM DATA" button is pressed
      */
-    public void stream() {
-        StreamDistanceDataTask task = new StreamDistanceDataTask();
-        task.execute();
+    public void stream(View view) {
+        if (executingCommand) return;
+
+        Button streamButton = (Button) findViewById(R.id.stream_data_button);
+        loader.setVisibility(View.VISIBLE);
+
+        if (streaming) {
+            streaming = false;
+            streamButton.setText("STREAM DATA");
+        } else {
+            streaming = true;
+            streamButton.setText("CANCEL STREAM");
+            StreamDistanceDataTask task = new StreamDistanceDataTask();
+            task.execute();
+        }
     }
 
     /**
      * Called when the "GET DEVICE STATUS" button is pressed
      */
-    public void status() {
+    public void status(View view) {
+        if (executingCommand) return;
+
+        loader.setVisibility(View.VISIBLE);
+        Log.d(BLUETOOTH, "Sending status command");
         GetDeviceStateTask task = new GetDeviceStateTask();
         task.execute();
     }
@@ -243,7 +268,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
      */
     private boolean sendString(String data) {
         try {
-            outputStream.write(("$" + data + "\n").getBytes());
+            outputStream.write(data.getBytes());
         } catch (IOException e) {
             return false;
         }
@@ -270,6 +295,8 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         protected Integer doInBackground(String ...params) {
             /* Search for paired Bluetooth devices */
             Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
+
+            executingCommand = true;
 
             if (pairedDevices.isEmpty()) {
                 /* We are not paired with a device */
@@ -312,6 +339,9 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
          */
         @Override
         protected void onPostExecute(Integer connectionResult) {
+            loader.setVisibility(View.INVISIBLE);
+            executingCommand = false;
+
             if (connectionResult == NOT_PAIRED) {
                 showBluetoothDialog("You must be paired with a device to perform this action.",
                         "Not Paired");
@@ -345,6 +375,8 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
          */
         @Override
         protected Integer doInBackground(String... params) {
+            executingCommand = true;
+
             /* Send command to bluetooth for calibration of distance sensor via NIOS */
             if(!sendString("C")) {
               /* Calibration unsuccessful */
@@ -361,6 +393,9 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
          */
         @Override
         protected void onPostExecute(Integer calibrateResult) {
+            loader.setVisibility(View.INVISIBLE);
+            executingCommand = false;
+
             if (calibrateResult == CALIBRATION_SUCCESS){
                 String calibrationDist = receiveString(2000);
 
@@ -415,12 +450,14 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
         @Override
         protected void onProgressUpdate(String... data) {
-            // TODO: update UI with data
+            TextView distanceView = (TextView) findViewById(R.id.dist_reading_value);
+            distanceView.setText(data[0]);
         }
 
         @Override
         protected void onPostExecute(Integer result) {
-            streaming = false;
+            /* Tell the remote device to stop streaming */
+            sendString("X");
 
             if (result == FAILURE) {
                 showBluetoothDialog("Failed to receive data from remote device.",
@@ -444,6 +481,8 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
          */
         @Override
         protected Integer doInBackground(String... params) {
+            executingCommand = true;
+
             if (sendString("S")) {
                 return SUCCESS;
             }
@@ -454,6 +493,9 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Integer result) {
+            loader.setVisibility(View.INVISIBLE);
+            executingCommand = false;
+
             if (result == SUCCESS) {
                 /* Success */
                 String data = receiveString(2000);
