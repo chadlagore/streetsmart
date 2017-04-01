@@ -203,11 +203,11 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
      */
     public BitmapDescriptor getProperlyColoredIcon(Long color) {
         if (color.equals(Intersection.RED)) {
-            return BitmapDescriptorFactory.fromResource(R.mipmap.level_red);
+            return BitmapDescriptorFactory.fromResource(R.drawable.level_red);
         } else if (color.equals(Intersection.YELLOW)) {
-            return BitmapDescriptorFactory.fromResource(R.mipmap.level_yellow);
+            return BitmapDescriptorFactory.fromResource(R.drawable.level_yellow);
         } else {
-            return BitmapDescriptorFactory.fromResource(R.mipmap.level_green);
+            return BitmapDescriptorFactory.fromResource(R.drawable.level_green);
         }
     }
 
