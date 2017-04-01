@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static com.example.chadlagore.streetsmart.R.id.bluetooth_connection_toolbar;
 
@@ -85,6 +86,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
             } else {
                 /* Bluetooth is enabled, establish connection */
+                loader.setVisibility(View.VISIBLE);
                 EstablishConnectionTask task = new EstablishConnectionTask();
                 task.execute();
             }
@@ -95,9 +97,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
      * Called when the "CALIBRATE" button is pressed
      */
     public void calibrate(View view) {
-        if (executingCommand) return;
-
-        loader.setVisibility(View.VISIBLE);
         SendCalibrateCommandTask task = new SendCalibrateCommandTask();
         task.execute();
     }
@@ -106,10 +105,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
      * Called when the "STREAM DATA" button is pressed
      */
     public void stream(View view) {
-        if (executingCommand) return;
-
         Button streamButton = (Button) findViewById(R.id.stream_data_button);
-        loader.setVisibility(View.VISIBLE);
 
         if (streaming) {
             streaming = false;
@@ -126,10 +122,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
      * Called when the "GET DEVICE STATUS" button is pressed
      */
     public void status(View view) {
-        if (executingCommand) return;
-
-        loader.setVisibility(View.VISIBLE);
-        Log.d(BLUETOOTH, "Sending status command");
         GetDeviceStateTask task = new GetDeviceStateTask();
         task.execute();
     }
@@ -296,8 +288,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             /* Search for paired Bluetooth devices */
             Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
 
-            executingCommand = true;
-
             if (pairedDevices.isEmpty()) {
                 /* We are not paired with a device */
                 return NOT_PAIRED;
@@ -377,6 +367,9 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         protected Integer doInBackground(String... params) {
             executingCommand = true;
 
+            /* Display the loader */
+            publishProgress();
+
             /* Send command to bluetooth for calibration of distance sensor via NIOS */
             if(!sendString("C")) {
               /* Calibration unsuccessful */
@@ -387,6 +380,11 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             }
         }
 
+        @Override
+        protected void onProgressUpdate(String... data) {
+            loader.setVisibility(View.VISIBLE);
+        }
+
         /**
          * Implicitly called when the task is done executing. This will update the UI with the
          * device UUID and name.
@@ -394,19 +392,19 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Integer calibrateResult) {
             loader.setVisibility(View.INVISIBLE);
-            executingCommand = false;
 
             if (calibrateResult == CALIBRATION_SUCCESS){
                 String calibrationDist = receiveString(2000);
 
-                if(calibrationDist == null) {
-                    showBluetoothDialog("No calibration distance received.", "Bluetooth Error");
+                if (calibrationDist == null) {
+                    showBluetoothDialog("No calibration distance received.",
+                            "Bluetooth Error");
                     return;
-                }
+                } else if (calibrationDist == "CANCELLED") return;
 
                 /* Update calibration distance on UI */
                 TextView calDistView = (TextView) findViewById(R.id.calibration_dist_value);
-                calDistView.setText(calibrationDist);
+                calDistView.setText(calibrationDist.replace("C", ""));
             } else {
                 showBluetoothDialog("Failed to send calibration command to remote device.",
                         "Bluetooth Error");
@@ -422,6 +420,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     private class StreamDistanceDataTask extends AsyncTask<String, String, Integer> {
         private final int SUCCESS = 0;
         private final int FAILURE = 1;
+        private final int CANCELLED = 2;
 
         /**
          * Send the Request Distance Reading Stream Command
@@ -435,12 +434,11 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 streaming = true;
 
                 while (streaming) {
-                    data = receiveString(2000);
-                    if (data == null) {
-                        return FAILURE;
+                    data = receiveString(3000);
+                    if (data == "CANCELLED") return CANCELLED;
+                    else if (data != null) {
+                        publishProgress(data);
                     }
-
-                    publishProgress(data);
                 }
             } else {
                 return FAILURE;
@@ -483,6 +481,9 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         protected Integer doInBackground(String... params) {
             executingCommand = true;
 
+            /* Display the loader */
+            publishProgress();
+
             if (sendString("S")) {
                 return SUCCESS;
             }
@@ -490,15 +491,19 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         }
 
 
+        @Override
+        protected void onProgressUpdate(String... data) {
+            loader.setVisibility(View.VISIBLE);
+        }
+
 
         @Override
         protected void onPostExecute(Integer result) {
             loader.setVisibility(View.INVISIBLE);
-            executingCommand = false;
 
             if (result == SUCCESS) {
                 /* Success */
-                String data = receiveString(2000);
+                String data = receiveString(5000);
 
                 if (data == null) {
                     showBluetoothDialog("Could not receive data from remote device.",
@@ -508,7 +513,12 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
                 String[] values = data.split(",");
 
-                String distance = values[0];
+                if (values.length < 5) {
+                    showBluetoothDialog("Invalid data received from device.", "Bluetooth Error");
+                    return;
+                }
+
+                String distance = values[0].replace("S", "");
                 String wifiStatus = values[1];
                 String calibrationDist = values[2];
                 String latitude = values[3];
