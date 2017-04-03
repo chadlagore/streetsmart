@@ -22,6 +22,10 @@ import android.widget.TextView;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -41,12 +45,13 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     private byte[] inputBuffer = null;
     protected boolean streaming = false;
     protected View loader;
-    protected boolean executingCommand = false;
+    protected List<AsyncTask> taskList;
 
 
     /* Constants */
     private final int REQUEST_ENABLE_BT = 1;
     private final String BLUETOOTH = "BLUETOOTH";
+    protected final String TASK_CANCELLED = "CANCELLED";
 
     /**
      * This is run when another activity calls startActivity() or startActivityForResult() with this
@@ -55,6 +60,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d(BLUETOOTH, "Starting BluetoothConnectionActivity");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bluetooth_connection);
 
@@ -66,6 +72,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         ActionBar actionBar = getSupportActionBar();
         actionBar.setDisplayHomeAsUpEnabled(true);
         loader = findViewById(R.id.progress_wheel);
+        taskList = Collections.synchronizedList(new ArrayList<AsyncTask>());
 
         /* Create a Bluetooth Adapter */
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -74,8 +81,8 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
              * Creating the Adapter probably failed because you are running in the emulator
              * Return to MainActivity
              */
-            showBluetoothDialog("This device does not appear to have Bluetooth capabilities which " +
-                "are required for this action.", "Bluetooth Unavailable");
+            showBluetoothDialog("This device does not appear to have Bluetooth capabilities which "
+                    + "are required for this action.", "Bluetooth Unavailable");
         } else {
             if (!bluetoothAdapter.isEnabled()) {
                 /*
@@ -94,17 +101,56 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     }
 
     /**
+     * Adds the task to the task list, signals other AsynchTasks to abort, then starts the task.
+     * Also displays loader.
+     * NEVER call execute() on the task you pass to this function!
+     */
+    protected synchronized void startTask(AsyncTask task) {
+        Log.d(BLUETOOTH, "Adding task to tasklist.");
+        loader.setVisibility(View.VISIBLE);
+
+        for (AsyncTask currentTask : taskList) {
+            if (currentTask instanceof SendCalibrateCommandTask) {
+                ((SendCalibrateCommandTask) currentTask).cancel(true);
+            }
+            else if (currentTask instanceof GetDeviceStateTask) {
+                ((GetDeviceStateTask) currentTask).cancel(true);
+            }
+            else ((StreamDistanceDataTask) currentTask).cancel(true);
+        }
+
+        taskList.add(task);
+
+        Log.d(BLUETOOTH, "Starting task.");
+        if (task instanceof SendCalibrateCommandTask) ((SendCalibrateCommandTask) task).execute();
+        else if (task instanceof GetDeviceStateTask) ((GetDeviceStateTask) task).execute();
+        else ((StreamDistanceDataTask) task).execute();
+    }
+
+    /**
+     * Removes the task from the taskList and hides loader.
+     * @param task
+     */
+    protected synchronized void endTask(AsyncTask task) {
+        Log.d(BLUETOOTH, "Removing task from tasklist.");
+
+        taskList.remove(taskList.indexOf(task));
+        if (taskList.size() == 0) loader.setVisibility(View.INVISIBLE);
+    }
+
+    /**
      * Called when the "CALIBRATE" button is pressed
      */
     public void calibrate(View view) {
-        SendCalibrateCommandTask task = new SendCalibrateCommandTask();
-        task.execute();
+        Log.d(BLUETOOTH, "Calibrate button pressed.");
+        startTask(new SendCalibrateCommandTask());
     }
 
     /**
      * Called when the "STREAM DATA" button is pressed
      */
     public void stream(View view) {
+        Log.d(BLUETOOTH, "Stream Data button pressed.");
         Button streamButton = (Button) findViewById(R.id.stream_data_button);
 
         if (streaming) {
@@ -113,8 +159,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         } else {
             streaming = true;
             streamButton.setText("CANCEL STREAM");
-            StreamDistanceDataTask task = new StreamDistanceDataTask();
-            task.execute();
+            startTask(new StreamDistanceDataTask());
         }
     }
 
@@ -122,8 +167,9 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
      * Called when the "GET DEVICE STATUS" button is pressed
      */
     public void status(View view) {
+        Log.d(BLUETOOTH, "Device Status button pressed.");
         GetDeviceStateTask task = new GetDeviceStateTask();
-        task.execute();
+        startTask(task);
     }
 
 
@@ -222,7 +268,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
      * otherwise return null
      */
     @Nullable
-    private String receiveString(int timeoutMillis) {
+    private String receiveString(int timeoutMillis, AsyncTask thisTask) {
         inputBuffer = new byte[2048];
         String dataReceived = "";
         boolean started = false;
@@ -231,6 +277,8 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         long startTime = System.currentTimeMillis();
 
         while (true) {
+            if (thisTask.isCancelled()) return TASK_CANCELLED;
+
             try {
                 bytes_read = inputStream.read(inputBuffer);
 
@@ -330,7 +378,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Integer connectionResult) {
             loader.setVisibility(View.INVISIBLE);
-            executingCommand = false;
 
             if (connectionResult == NOT_PAIRED) {
                 showBluetoothDialog("You must be paired with a device to perform this action.",
@@ -365,10 +412,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
          */
         @Override
         protected Integer doInBackground(String... params) {
-            executingCommand = true;
-
-            /* Display the loader */
-            publishProgress();
+            Log.d(BLUETOOTH, "SendCalibrateCommandTask started.");
 
             /* Send command to bluetooth for calibration of distance sensor via NIOS */
             if(!sendString("C")) {
@@ -380,27 +424,26 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             }
         }
 
-        @Override
-        protected void onProgressUpdate(String... data) {
-            loader.setVisibility(View.VISIBLE);
-        }
-
         /**
          * Implicitly called when the task is done executing. This will update the UI with the
          * device UUID and name.
          */
         @Override
         protected void onPostExecute(Integer calibrateResult) {
-            loader.setVisibility(View.INVISIBLE);
+            Log.d(BLUETOOTH, "SendCalibrateCommandTask done.");
 
             if (calibrateResult == CALIBRATION_SUCCESS){
-                String calibrationDist = receiveString(2000);
+                String calibrationDist = receiveString(2000, this);
 
                 if (calibrationDist == null) {
                     showBluetoothDialog("No calibration distance received.",
                             "Bluetooth Error");
+                    endTask(this);
                     return;
-                } else if (calibrationDist == "CANCELLED") return;
+                } else if (calibrationDist.equals(TASK_CANCELLED)) {
+                    endTask(this);
+                    return;
+                }
 
                 /* Update calibration distance on UI */
                 TextView calDistView = (TextView) findViewById(R.id.calibration_dist_value);
@@ -408,6 +451,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             } else {
                 showBluetoothDialog("Failed to send calibration command to remote device.",
                         "Bluetooth Error");
+                endTask(this);
             }
         }
     }
@@ -429,15 +473,17 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
          */
         @Override
         protected Integer doInBackground(String... params) {
+            Log.d(BLUETOOTH, "StreamDistanceDataTask started.");
+
             if (sendString("D")) {
                 String data;
                 streaming = true;
 
                 while (streaming) {
-                    data = receiveString(3000);
-                    if (data == "CANCELLED") return CANCELLED;
+                    data = receiveString(3000, this);
+                    if (data.equals(TASK_CANCELLED)) return CANCELLED;
                     else if (data != null) {
-                        publishProgress(data);
+                        publishProgress(data.replace("D", ""));
                     }
                 }
             } else {
@@ -454,6 +500,8 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Integer result) {
+            Log.d(BLUETOOTH, "StreamDistanceDataTask done.");
+
             /* Tell the remote device to stop streaming */
             sendString("X");
 
@@ -461,6 +509,8 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 showBluetoothDialog("Failed to receive data from remote device.",
                         "Bluetooth Error");
             }
+
+            endTask(this);
         }
     }
 
@@ -475,14 +525,11 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         /**
          * Send the Request Device Status Command
          * @param params unused
-         * @return 0 on success and 1 on failure
+         * @return SUCCESS or FAILURE
          */
         @Override
         protected Integer doInBackground(String... params) {
-            executingCommand = true;
-
-            /* Display the loader */
-            publishProgress();
+            Log.d(BLUETOOTH, "GetDeviceStateTask started.");
 
             if (sendString("S")) {
                 return SUCCESS;
@@ -492,22 +539,20 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
 
         @Override
-        protected void onProgressUpdate(String... data) {
-            loader.setVisibility(View.VISIBLE);
-        }
-
-
-        @Override
         protected void onPostExecute(Integer result) {
-            loader.setVisibility(View.INVISIBLE);
+            Log.d(BLUETOOTH, "GetDeviceStateTask done.");
 
             if (result == SUCCESS) {
                 /* Success */
-                String data = receiveString(5000);
+                String data = receiveString(5000, this);
 
                 if (data == null) {
                     showBluetoothDialog("Could not receive data from remote device.",
                             "Bluetooth Error");
+                    endTask(this);
+                    return;
+                } else if (data.equals(TASK_CANCELLED)) {
+                    endTask(this);
                     return;
                 }
 
@@ -515,6 +560,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
                 if (values.length < 5) {
                     showBluetoothDialog("Invalid data received from device.", "Bluetooth Error");
+                    endTask(this);
                     return;
                 }
 
@@ -534,6 +580,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 calDistView.setText(calibrationDist);
                 GPSView.setText(latitude + ", " + longitude);
             } else {
+                endTask(this);
                 showBluetoothDialog("Failed to send command to remote device.", "Bluetooth Error");
             }
         }
