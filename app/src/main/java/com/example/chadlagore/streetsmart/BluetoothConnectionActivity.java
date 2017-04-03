@@ -119,6 +119,13 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             else ((StreamDistanceDataTask) currentTask).cancel(true);
         }
 
+        if (streaming && !(task instanceof StreamDistanceDataTask)) {
+            /* We were streaming and the user started another task. Cancel stream! */
+            streaming = false;
+            Button streamButton = (Button) findViewById(R.id.stream_data_button);
+            streamButton.setText("STREAM DATA");
+        }
+
         taskList.add(task);
 
         Log.d(BLUETOOTH, "Starting task.");
@@ -135,7 +142,20 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         Log.d(BLUETOOTH, "Removing task from tasklist.");
 
         taskList.remove(taskList.indexOf(task));
-        if (taskList.size() == 0) loader.setVisibility(View.INVISIBLE);
+        if (taskList.isEmpty()) loader.setVisibility(View.INVISIBLE);
+    }
+
+    /**
+     * Returns whether or not this task was cancelled regardless of its type.
+     */
+    protected boolean taskCancelled(AsyncTask task) {
+        if (task instanceof GetDeviceStateTask) {
+            return ((GetDeviceStateTask)task).isCancelled();
+        } else if (task instanceof SendCalibrateCommandTask) {
+            return ((SendCalibrateCommandTask)task).isCancelled();
+        } else {
+            return ((StreamDistanceDataTask)task).isCancelled();
+        }
     }
 
     /**
@@ -277,7 +297,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         long startTime = System.currentTimeMillis();
 
         while (true) {
-            if (thisTask.isCancelled()) return TASK_CANCELLED;
+            if (taskCancelled(thisTask)) return TASK_CANCELLED;
 
             try {
                 bytes_read = inputStream.read(inputBuffer);
@@ -377,8 +397,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
          */
         @Override
         protected void onPostExecute(Integer connectionResult) {
-            loader.setVisibility(View.INVISIBLE);
-
             if (connectionResult == NOT_PAIRED) {
                 showBluetoothDialog("You must be paired with a device to perform this action.",
                         "Not Paired");
@@ -393,6 +411,8 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 TextView nameView = (TextView) findViewById(R.id.device_name_value);
                 nameView.setText(deviceName);
             }
+
+            loader.setVisibility(View.INVISIBLE);
         }
     }
 
@@ -406,7 +426,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         private final int NOT_CALIBRATED = 1;
 
         /**
-         * Implcitly called when execute() is called on an AsynchTask of this type.
+         * Implicitly called when execute() is called on an AsynchTask of this type.
          * @param params should just be void
          * @return 1 if an error occurred attempting to establish a connection, 0 on success.
          */
@@ -431,6 +451,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Integer calibrateResult) {
             Log.d(BLUETOOTH, "SendCalibrateCommandTask done.");
+            endTask(this);
 
             if (calibrateResult == CALIBRATION_SUCCESS){
                 String calibrationDist = receiveString(2000, this);
@@ -438,20 +459,17 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 if (calibrationDist == null) {
                     showBluetoothDialog("No calibration distance received.",
                             "Bluetooth Error");
-                    endTask(this);
                     return;
                 } else if (calibrationDist.equals(TASK_CANCELLED)) {
-                    endTask(this);
                     return;
                 }
 
                 /* Update calibration distance on UI */
                 TextView calDistView = (TextView) findViewById(R.id.calibration_dist_value);
-                calDistView.setText(calibrationDist.replace("C", ""));
+                calDistView.setText(calibrationDist.replace("C", "") + " cm");
             } else {
                 showBluetoothDialog("Failed to send calibration command to remote device.",
                         "Bluetooth Error");
-                endTask(this);
             }
         }
     }
@@ -495,7 +513,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         @Override
         protected void onProgressUpdate(String... data) {
             TextView distanceView = (TextView) findViewById(R.id.dist_reading_value);
-            distanceView.setText(data[0]);
+            distanceView.setText(data[0] + " cm");
         }
 
         @Override
@@ -541,6 +559,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Integer result) {
             Log.d(BLUETOOTH, "GetDeviceStateTask done.");
+            endTask(this);
 
             if (result == SUCCESS) {
                 /* Success */
@@ -549,10 +568,8 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 if (data == null) {
                     showBluetoothDialog("Could not receive data from remote device.",
                             "Bluetooth Error");
-                    endTask(this);
                     return;
                 } else if (data.equals(TASK_CANCELLED)) {
-                    endTask(this);
                     return;
                 }
 
@@ -560,7 +577,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
                 if (values.length < 5) {
                     showBluetoothDialog("Invalid data received from device.", "Bluetooth Error");
-                    endTask(this);
                     return;
                 }
 
@@ -575,12 +591,11 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 TextView calDistView = (TextView) findViewById(R.id.calibration_dist_value);
                 TextView GPSView = (TextView) findViewById(R.id.gps_data_value);
 
-                distView.setText(distance);
+                distView.setText(distance + " cm");
                 wifiView.setText(wifiStatus);
-                calDistView.setText(calibrationDist);
+                calDistView.setText(calibrationDist + " cm");
                 GPSView.setText(latitude + ", " + longitude);
             } else {
-                endTask(this);
                 showBluetoothDialog("Failed to send command to remote device.", "Bluetooth Error");
             }
         }
