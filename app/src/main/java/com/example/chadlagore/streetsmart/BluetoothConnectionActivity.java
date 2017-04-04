@@ -166,7 +166,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     public void calibrate(View view) {
         Log.d(BLUETOOTH, "Calibrate button pressed.");
         startTask(new SendCalibrateCommandTask());
-        view.invalidate();
     }
 
     /**
@@ -192,7 +191,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     public void status(View view) {
         Log.d(BLUETOOTH, "Device Status button pressed.");
         startTask(new GetDeviceStateTask());
-        view.invalidate();
     }
 
 
