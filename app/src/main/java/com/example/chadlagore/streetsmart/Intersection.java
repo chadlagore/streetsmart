@@ -31,6 +31,7 @@ public class Intersection {
     private Marker green;
     private Marker red;
     private Marker yellow;
+    private Marker blue;
 
     // Current conditions at intersection
     private long last_minute_passthroughs;
@@ -39,6 +40,7 @@ public class Intersection {
     public static final long GREEN = 1;
     public static final long YELLOW = 3;
     public static final long RED = 5;
+    public static final long BLUE = 6;
 
     /**
      * Constructor. Requires all the parameters that define an intersection.
@@ -100,9 +102,16 @@ public class Intersection {
                 this.getIntersectionName(),
                 YELLOW);
 
+        // and the bluetooth one...
+        this.blue = mapFragment.createMarkerAddToMap(latlng,
+                this.intersection_id,
+                this.getIntersectionName(),
+                BLUE);
+
         this.green.setSnippet(String.valueOf(intersection_id));
         this.yellow.setSnippet(String.valueOf(intersection_id));
         this.red.setSnippet(String.valueOf(intersection_id));
+        this.blue.setSnippet(String.valueOf(intersection_id));
 
         // set the marker that is appropriately colored to visible
         setPassthroughsLastMinute(last_minute_passthroughs);
@@ -116,7 +125,8 @@ public class Intersection {
      * @return the marker that is currently visible
      */
     public Marker getMarker () {
-        if (this.red.isVisible()) return this.red;
+        if (this.blue.isVisible()) return this.blue;
+        else if (this.red.isVisible()) return this.red;
         else if (this.yellow.isVisible()) return this.yellow;
         else return this.green;
     }
@@ -187,15 +197,23 @@ public class Intersection {
         this.last_minute_passthroughs = passthroughs;
 
         // set the appropriate marker to visible
-        if (this.last_minute_passthroughs > RED) {
+        if (this.last_minute_passthroughs == -1) {
+            blue.setVisible(true);
+            yellow.setVisible(false);
+            red.setVisible(false);
+            green.setVisible(false);
+        } else if (this.last_minute_passthroughs > RED) {
+            blue.setVisible(false);
             red.setVisible(true);
             yellow.setVisible(false);
             green.setVisible(false);
         } else if (this.last_minute_passthroughs < RED && this.last_minute_passthroughs >= YELLOW) {
+            blue.setVisible(false);
             yellow.setVisible(true);
             red.setVisible(false);
             green.setVisible(false);
         } else {
+            blue.setVisible(false);
             green.setVisible(true);
             yellow.setVisible(false);
             red.setVisible(false);
