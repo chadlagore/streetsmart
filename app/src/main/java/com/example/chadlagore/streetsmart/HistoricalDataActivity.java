@@ -201,12 +201,48 @@ public class HistoricalDataActivity extends AppCompatActivity {
     }
 
     /**
+     * Handle hourly click.
+     * @param view
+     */
+    private void onHourlyClick(View view) {
+        // HistoricalRequest request = new HistoricalRequest( ... );
+        // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
+    }
+
+    /**
+     * Handle daily click.
+     * @param view
+     */
+    private void onDailyClick(View view) {
+        // HistoricalRequest request = new HistoricalRequest( ... );
+        // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
+    }
+
+    /**
+     * Handle weekly click.
+     * @param view
+     */
+    private void onWeeklyClick(View view) {
+        // HistoricalRequest request = new HistoricalRequest( ... );
+        // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
+    }
+
+    /**
      * Handle monthly click.
      * @param view
      */
     private void onMonthlyClick(View view) {
         // HistoricalRequest request = new HistoricalRequest( ... );
-        // request.execute();
+        // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
+    }
+
+    /**
+     * Handle yearly click.
+     * @param view
+     */
+    private void onYearlyClick(View view) {
+        // HistoricalRequest request = new HistoricalRequest( ... );
+        // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
     }
 
     /**
