@@ -6,12 +6,9 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Color;
-import android.graphics.Point;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.ParcelUuid;
-import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
@@ -52,8 +49,11 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     protected boolean streaming = false;
     protected View loader;
     protected List<AsyncTask> taskList;
-    protected LineChart distanceChart = null;
+    protected LineChart chart = null;
     protected LineData distanceData = null;
+    protected LineData carCountData = null;
+    protected int firstDistanceEntryIndex = 0;
+    protected int firstCarCountEntryIndex = 0;
 
 
     /* Constants */
@@ -83,13 +83,14 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         taskList = Collections.synchronizedList(new ArrayList<AsyncTask>());
 
         /* Set up distance plot */
-        distanceChart = (LineChart) findViewById(R.id.distance_chart);
+        chart = (LineChart) findViewById(R.id.distance_chart);
         List<Entry> distanceEntries = new ArrayList<Entry>();
         distanceEntries.add(new Entry(0, 0));
         LineDataSet dataSet = new LineDataSet(distanceEntries, "Distance Readings");
         distanceData = new LineData(dataSet);
-        distanceChart.setData(distanceData);
-        distanceChart.invalidate();
+        carCountData = new LineData(dataSet);
+        chart.setData(distanceData);
+        chart.invalidate();
 
         /* Create a Bluetooth Adapter */
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -124,8 +125,8 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
      */
     protected synchronized void startTask(AsyncTask task) {
         Log.d(BLUETOOTH, "Adding task to tasklist.");
-        loader.setVisibility(View.VISIBLE);
 
+        /* Cancel currently running tasks */
         for (AsyncTask currentTask : taskList) {
             if (currentTask instanceof SendCalibrateCommandTask) {
                 ((SendCalibrateCommandTask) currentTask).cancel(true);
@@ -133,23 +134,50 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             else if (currentTask instanceof GetDeviceStateTask) {
                 ((GetDeviceStateTask) currentTask).cancel(true);
             }
+            else if (currentTask instanceof StreamCarCountTask) {
+                ((StreamCarCountTask) currentTask).cancel(true);
+            }
             else ((StreamDistanceDataTask) currentTask).cancel(true);
         }
 
-        if (streaming && !(task instanceof StreamDistanceDataTask)) {
-            /* We were streaming and the user started another task. Cancel stream! */
-            streaming = false;
-            Button streamButton = (Button) findViewById(R.id.stream_data_button);
-            streamButton.setText("STREAM DATA");
+        if (streaming) {
+            if (!(task instanceof StreamDistanceDataTask)) {
+                /* We were streaming and the user started another task. Cancel stream! */
+                streaming = false;
+                Button streamButton = (Button) findViewById(R.id.stream_data_button);
+                streamButton.setText("STREAM DISTANCE READINGS");
+            } else if (!(task instanceof StreamCarCountTask)) {
+                /*
+                 * We were streaming car count data and the user started another task.
+                 * Cancel stream!
+                 */
+                streaming = false;
+                Button streamButton = (Button) findViewById(R.id.stream_car_count_button);
+                streamButton.setText("STREAM CAR COUNT");
+            }
         }
 
         taskList.add(task);
 
         Log.d(BLUETOOTH, "Starting task.");
-        if (task instanceof SendCalibrateCommandTask) ((SendCalibrateCommandTask) task).execute();
-        else if (task instanceof GetDeviceStateTask) ((GetDeviceStateTask) task).execute();
+        if (task instanceof SendCalibrateCommandTask) {
+            loader.setVisibility(View.VISIBLE);
+            ((SendCalibrateCommandTask) task).execute();
+        }
+        else if (task instanceof GetDeviceStateTask) {
+            loader.setVisibility(View.VISIBLE);
+            ((GetDeviceStateTask) task).execute();
+        }
+        else if (task instanceof StreamCarCountTask) {
+            streaming = true;
+            chart.setData(carCountData);
+            chart.notifyDataSetChanged();
+            ((StreamCarCountTask) task).execute();
+        }
         else {
             streaming = true;
+            chart.setData(distanceData);
+            chart.notifyDataSetChanged();
             ((StreamDistanceDataTask) task).execute();
         }
     }
@@ -174,7 +202,9 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         if (task instanceof GetDeviceStateTask) {
             return ((GetDeviceStateTask)task).isCancelled();
         } else if (task instanceof SendCalibrateCommandTask) {
-            return ((SendCalibrateCommandTask)task).isCancelled();
+            return ((SendCalibrateCommandTask) task).isCancelled();
+        } else if (task instanceof  StreamCarCountTask) {
+            return ((StreamCarCountTask) task).isCancelled();
         } else {
             return ((StreamDistanceDataTask)task).isCancelled();
         }
@@ -189,19 +219,36 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     }
 
     /**
-     * Called when the "STREAM DATA" button is pressed
+     * Called when the "STREAM DISTANCE READINGS" button is pressed
      */
-    public void stream(View view) {
-        Log.d(BLUETOOTH, "Stream Data button pressed.");
+    public void streamDistanceData(View view) {
+        Log.d(BLUETOOTH, "Stream Distance Readings button pressed.");
         Button streamButton = (Button) findViewById(R.id.stream_data_button);
 
         if (streaming) {
             streaming = false;
-            streamButton.setText("STREAM DATA");
+            streamButton.setText("STREAM DISTANCE READINGS");
         } else {
             streaming = true;
             streamButton.setText("CANCEL STREAM");
             startTask(new StreamDistanceDataTask());
+        }
+    }
+
+    /**
+     * Called when the "STREAM CAR COUNT" button is pressed
+     */
+    public void streamCarCount(View view) {
+        Log.d(BLUETOOTH, "Stream Car Count button pressed.");
+        Button streamButton = (Button) findViewById(R.id.stream_car_count_button);
+
+        if (streaming) {
+            streaming = false;
+            streamButton.setText("STREAM CAR COUNT");
+        } else {
+            streaming = true;
+            streamButton.setText("CANCEL STREAM");
+            startTask(new StreamCarCountTask());
         }
     }
 
@@ -312,7 +359,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         inputBuffer = new byte[2048];
         String dataReceived = "";
         boolean started = false;
-        int bytes_read;
+        int bytesRead;
 
         long startTime = System.currentTimeMillis();
 
@@ -320,11 +367,11 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             if (taskCancelled(thisTask)) return TASK_CANCELLED;
 
             try {
-                bytes_read = inputStream.read(inputBuffer);
+                bytesRead = inputStream.read(inputBuffer);
 
                 if (inputBuffer[0] == '$' || started) {
                     started = true;
-                    dataReceived += new String(inputBuffer, 0, bytes_read);
+                    dataReceived += new String(inputBuffer, 0, bytesRead);
                 }
 
                 if (inputBuffer[0] == '\n' && started) {
@@ -346,7 +393,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
      * @param data
      * @return true on success and false on failure
      */
-    private boolean sendString(String data) {
+    private synchronized boolean sendString(String data) {
         try {
             outputStream.write(data.getBytes());
         } catch (IOException e) {
@@ -544,9 +591,16 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             distanceView.setText(data[0] + " cm");
             float distanceReading = Float.parseFloat(data[0]);
             distanceData.addEntry(new Entry(distanceData.getEntryCount(), distanceReading), 0);
-            distanceData.removeEntry(null, 0);
-            distanceChart.notifyDataSetChanged();
-            distanceChart.invalidate();
+
+            /* If the chart is getting full remove its first data point */
+            if (distanceData.getDataSetCount() >= 10) {
+                Log.d(BLUETOOTH, "Removing entry from distance chart");
+                distanceData.removeEntry(firstDistanceEntryIndex, 0);
+                firstDistanceEntryIndex++;
+            }
+
+            chart.notifyDataSetChanged();
+            chart.invalidate();
         }
 
         @Override
@@ -608,9 +662,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                             "Bluetooth Error");
                     endTask(this);
                     return;
-                } else if (data.equals(TASK_CANCELLED)) {
-                    endTask(this);
-                    return;
                 }
 
                 String[] values = data.split(",");
@@ -645,6 +696,72 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             }
 
             Log.d(BLUETOOTH, "GetDeviceStateTask done.");
+            endTask(this);
+        }
+    }
+
+    /**
+     * Asynchronously stream car count from remove Blueooth device
+     * NOTE: For this task to run the Bluetooth addapter must have been initialized correctly.
+     */
+    private class StreamCarCountTask extends AsyncTask<String, String, Integer> {
+        private final Integer SUCCESS = 0;
+        private final Integer FAILED = 1;
+
+        @Override
+        protected Integer doInBackground(String... params) {
+            Log.d(BLUETOOTH, "Streaming car count data.");
+            String data;
+
+            if (sendString("O")) {
+
+                while (streaming) {
+                    data = receiveString(7000, this);
+
+                    if (data == null || data == TASK_CANCELLED) {
+                        return FAILED;
+                    }
+
+                    publishProgress(data);
+                }
+                return SUCCESS;
+            } else {
+                return FAILED;
+            }
+        }
+
+        @Override
+        protected void onProgressUpdate(String ...data) {
+            int carCount = Integer.parseInt(data[0]);
+            Log.d(BLUETOOTH, "Updating car count graph");
+
+            // TODO: getEntryCount might be a problem
+            carCountData.addEntry(new Entry(carCountData.getEntryCount(), carCount), 0);
+
+            /* If the chart is getting full remove its first data point */
+            if (carCountData.getDataSetCount() >= 10) {
+                carCountData.removeEntry(firstCarCountEntryIndex, 0);
+                firstCarCountEntryIndex++;
+            }
+
+            chart.notifyDataSetChanged();
+            chart.invalidate();
+        }
+
+        @Override
+        protected void onCancelled() {
+            sendString("X");
+            endTask(this);
+        }
+
+        @Override
+        protected void onPostExecute(Integer result) {
+            Log.d(BLUETOOTH, "StreamCarCountTask done.");
+            sendString("X");
+
+            if (result == FAILED) {
+                showBluetoothDialog("Bluetooth Error", "No data received from remote device.");
+            }
             endTask(this);
         }
     }

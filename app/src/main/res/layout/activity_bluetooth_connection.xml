@@ -188,15 +188,29 @@
         android:layout_marginRight="20dp"
         android:layout_marginBottom="10dp"
         android:layout_centerHorizontal="true"
-        android:layout_above="@+id/stream_data_button" />
+        android:layout_above="@+id/stream_car_count_button" />
 
     <Button
-        android:id="@+id/stream_data_button"
-        android:onClick="stream"
+        android:id="@+id/stream_car_count_button"
+        android:onClick="streamCarCount"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:text="Stream Data"
+        android:text="Stream Car Count"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        app:layout_constraintTop_toTopOf="@+id/calibrate_button"
+        android:layout_above="@+id/stream_data_button"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="10dp" />
+
+    <Button
+        android:id="@+id/stream_data_button"
+        android:onClick="streamDistanceData"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Stream Distance Readings"
         android:layout_marginLeft="20dp"
         android:layout_marginRight="20dp"
         app:layout_constraintTop_toTopOf="@+id/calibrate_button"
