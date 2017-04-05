@@ -142,7 +142,9 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         Log.d(BLUETOOTH, "Removing task from tasklist.");
 
         taskList.remove(taskList.indexOf(task));
-        if (taskList.isEmpty()) loader.setVisibility(View.INVISIBLE);
+        if (taskList.isEmpty()) {
+            loader.setVisibility(View.INVISIBLE);
+        }
     }
 
     /**
@@ -188,8 +190,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
      */
     public void status(View view) {
         Log.d(BLUETOOTH, "Device Status button pressed.");
-        GetDeviceStateTask task = new GetDeviceStateTask();
-        startTask(task);
+        startTask(new GetDeviceStateTask());
     }
 
 
@@ -254,7 +255,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             }
         }
     }
-
 
     /**
      * Initializes the input and output streams for the current BTSocket
@@ -450,7 +450,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
          */
         @Override
         protected void onPostExecute(Integer calibrateResult) {
-            Log.d(BLUETOOTH, "SendCalibrateCommandTask done.");
             endTask(this);
 
             if (calibrateResult == CALIBRATION_SUCCESS){
@@ -471,6 +470,8 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 showBluetoothDialog("Failed to send calibration command to remote device.",
                         "Bluetooth Error");
             }
+
+            Log.d(BLUETOOTH, "SendCalibrateCommandTask done.");
         }
     }
 
@@ -518,8 +519,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Integer result) {
-            Log.d(BLUETOOTH, "StreamDistanceDataTask done.");
-
             /* Tell the remote device to stop streaming */
             sendString("X");
 
@@ -528,6 +527,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                         "Bluetooth Error");
             }
 
+            Log.d(BLUETOOTH, "StreamDistanceDataTask done.");
             endTask(this);
         }
     }
@@ -558,9 +558,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Integer result) {
-            Log.d(BLUETOOTH, "GetDeviceStateTask done.");
-            endTask(this);
-
             if (result == SUCCESS) {
                 /* Success */
                 String data = receiveString(5000, this);
@@ -568,8 +565,10 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 if (data == null) {
                     showBluetoothDialog("Could not receive data from remote device.",
                             "Bluetooth Error");
+                    endTask(this);
                     return;
                 } else if (data.equals(TASK_CANCELLED)) {
+                    endTask(this);
                     return;
                 }
 
@@ -577,14 +576,16 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
                 if (values.length < 5) {
                     showBluetoothDialog("Invalid data received from device.", "Bluetooth Error");
+                    endTask(this);
                     return;
                 }
 
+                /* Update UI with data we received */
                 String distance = values[0].replace("S", "");
                 String wifiStatus = values[1];
                 String calibrationDist = values[2];
                 String latitude = values[3];
-                String longitude = values[4];
+                String longitude = "-" + values[4]; /* The longitude comes in with the wrong sign */
 
                 TextView distView = (TextView) findViewById(R.id.dist_reading_value);
                 TextView wifiView = (TextView) findViewById(R.id.wifi_status_value);
@@ -595,9 +596,15 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 wifiView.setText(wifiStatus);
                 calDistView.setText(calibrationDist + " cm");
                 GPSView.setText(latitude + ", " + longitude);
+
+                /* Add this device to MainActivity's map */
+                Globals.setBluetoothIntersection(latitude, longitude);
             } else {
                 showBluetoothDialog("Failed to send command to remote device.", "Bluetooth Error");
             }
+
+            Log.d(BLUETOOTH, "GetDeviceStateTask done.");
+            endTask(this);
         }
     }
 }
