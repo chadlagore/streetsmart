@@ -5,9 +5,23 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <ProgressBar
+        android:id="@+id/progress_wheel"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="8dp"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginLeft="8dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/bluetooth_connection_toolbar"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true" />
+
     <android.support.v7.widget.Toolbar
         android:id="@+id/bluetooth_connection_toolbar"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="64dp"
         android:background="?attr/colorPrimary"
         android:elevation="4dp"
@@ -24,6 +38,8 @@
         android:text="Remote Device Configuration"
         android:textAlignment="center"
         android:layout_centerHorizontal="true"
+        android:layout_alignTop="@id/bluetooth_connection_toolbar"
+        android:layout_marginTop="80dp"
         android:textSize="30dp" />
 
     <TextView
@@ -33,7 +49,8 @@
         android:text="Device Name"
         android:layout_alignLeft="@+id/update_status_button"
         android:layout_below="@id/remote_device_config"
-        android:layout_marginTop="20dp" />
+        android:layout_marginTop="20dp"
+        android:textSize="20dp"/>
 
     <TextView
         android:id="@+id/device_name_value"
@@ -42,7 +59,8 @@
         android:layout_alignRight="@id/update_status_button"
         android:layout_alignBaseline="@id/device_name_title"
         android:layout_marginBottom="10dp"
-        android:text="NONE" />
+        android:text="NONE"
+        android:textSize="20dp"/>
 
     <TextView
         android:id="@+id/uuid_title"
@@ -51,7 +69,8 @@
         android:text="Device UUID"
         android:layout_alignLeft="@id/update_status_button"
         android:layout_below="@id/device_name_title"
-        android:layout_marginTop="10dp" />
+        android:layout_marginTop="10dp"
+        android:textSize="20dp"/>
 
     <TextView
         android:id="@+id/uuid_value"
@@ -60,7 +79,8 @@
         android:layout_alignRight="@id/update_status_button"
         android:layout_alignBaseline="@id/uuid_title"
         android:layout_marginBottom="10dp"
-        android:text="NONE" />
+        android:text="NONE"
+        android:textSize="20dp"/>
 
     <TextView
         android:id="@+id/dist_reading_title"
@@ -69,7 +89,8 @@
         android:text="Last Distance Reading"
         android:layout_alignLeft="@id/update_status_button"
         android:layout_below="@id/uuid_title"
-        android:layout_marginTop="10dp" />
+        android:layout_marginTop="10dp"
+        android:textSize="20dp"/>
 
     <TextView
         android:id="@+id/dist_reading_value"
@@ -77,7 +98,8 @@
         android:layout_height="wrap_content"
         android:layout_alignRight="@id/update_status_button"
         android:layout_alignBaseline="@id/dist_reading_title"
-        android:text="NONE"/>
+        android:text="NONE"
+        android:textSize="20dp" />
 
     <TextView
         android:id="@+id/wifi_status_title"
@@ -86,7 +108,8 @@
         android:text="Wifi Connection Status"
         android:layout_alignLeft="@id/update_status_button"
         android:layout_below="@id/dist_reading_title"
-        android:layout_marginTop="10dp" />
+        android:layout_marginTop="10dp"
+        android:textSize="20dp"/>
 
     <TextView
         android:id="@+id/wifi_status_value"
@@ -94,7 +117,8 @@
         android:layout_height="wrap_content"
         android:layout_alignRight="@id/update_status_button"
         android:layout_alignBaseline="@id/wifi_status_title"
-        android:text="NONE" />
+        android:text="NONE"
+        android:textSize="20dp"/>
 
     <TextView
         android:id="@+id/calibration_dist_title"
@@ -103,7 +127,8 @@
         android:text="Calibration Distance"
         android:layout_alignLeft="@id/update_status_button"
         android:layout_below="@id/wifi_status_title"
-        android:layout_marginTop="10dp" />
+        android:layout_marginTop="10dp"
+        android:textSize="20dp"/>
 
     <TextView
         android:id="@+id/calibration_dist_value"
@@ -111,7 +136,8 @@
         android:layout_height="wrap_content"
         android:layout_alignRight="@id/update_status_button"
         android:layout_alignBaseline="@id/calibration_dist_title"
-        android:text="NONE"/>
+        android:text="NONE"
+        android:textSize="20dp"/>
 
     <TextView
         android:id="@+id/gps_data_title"
@@ -120,7 +146,8 @@
         android:text="GPS Coordinates"
         android:layout_alignLeft="@id/update_status_button"
         android:layout_below="@id/calibration_dist_title"
-        android:layout_marginTop="10dp" />
+        android:layout_marginTop="10dp"
+        android:textSize="20dp"/>
 
     <TextView
         android:id="@+id/gps_data_value"
@@ -128,7 +155,8 @@
         android:layout_height="wrap_content"
         android:layout_alignRight="@id/update_status_button"
         android:layout_alignBaseline="@id/gps_data_title"
-        android:text="NONE"/>
+        android:text="NONE"
+        android:textSize="20dp"/>
 
     <Button
         android:id="@+id/update_status_button"
@@ -137,8 +165,8 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:text="Get Device Status"
-        android:layout_marginLeft="5dp"
-        android:layout_marginRight="5dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
         android:layout_marginBottom="10dp"
         android:layout_centerHorizontal="true"
         android:layout_above="@+id/stream_data_button" />
@@ -150,8 +178,8 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:text="Stream Data"
-        android:layout_marginLeft="5dp"
-        android:layout_marginRight="5dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
         app:layout_constraintTop_toTopOf="@+id/calibrate_button"
         android:layout_above="@+id/calibrate_button"
         android:layout_centerHorizontal="true"
@@ -163,8 +191,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:layout_marginLeft="5dp"
-        android:layout_marginRight="5dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
         android:text="Calibrate"
         android:layout_marginBottom="20dp"
         android:layout_alignParentBottom="true"

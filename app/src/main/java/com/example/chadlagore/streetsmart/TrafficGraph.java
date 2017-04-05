@@ -42,7 +42,7 @@ public class TrafficGraph extends DialogFragment {
     final private static long updateGraphDelay = 0;
     final private static long updateGraphInterval = 750;
 
-    /* Class debuggig tag. */
+    /* Class debugging tag. */
     static final private String TAG = "traffic_graph";
 
     static private Long intersection_id;
@@ -107,7 +107,7 @@ public class TrafficGraph extends DialogFragment {
                 series.appendData(new DataPoint(getNewXVAlue(),
                         obj.getDouble("cars")), true, num_bars);
             } catch (JSONException e) {
-                Log.i(TAG, "recived data, but failed to get object.");
+                Log.i(TAG, "received data, but failed to get object.");
                 e.printStackTrace();
             }
             Log.i(TAG, newIntersectionData.toString());
@@ -122,8 +122,8 @@ public class TrafficGraph extends DialogFragment {
     }
 
     /*
-     * Schedules a map update timer to run on an asyncronous task.
-     * Called once when the fragent is set up for a new intersection.
+     * Schedules a map update timer to run on an asynchronous task.
+     * Called once when the fragment is set up for a new intersection.
      * The timer is cancelled in OnDismiss.
      */
     private static void scheduleMapUpdate() {
