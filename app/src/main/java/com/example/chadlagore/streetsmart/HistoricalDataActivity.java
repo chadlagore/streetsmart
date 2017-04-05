@@ -234,21 +234,23 @@ public class HistoricalDataActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Set content view, add toolbar.
+     * @param savedInstanceState
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_historical_data);
 
-        Log.i(TAG, "setting toolbar");
+        /* Generate toolbar at top of activity. */
         Toolbar appToolbar = (Toolbar) findViewById(R.id.historical_toolbar);
         setSupportActionBar(appToolbar);
-
         ActionBar actionBar = getSupportActionBar();
 
-        if (actionBar != null) {
-            Log.i(TAG, "action bar not null");
-            actionBar.setDisplayHomeAsUpEnabled(true);
-        }
+        /* Add back button for ancestral navigation. */
+        actionBar.setDisplayHomeAsUpEnabled(true);
+
     }
 
     // Menu icons are inflated just as they were with actionbar

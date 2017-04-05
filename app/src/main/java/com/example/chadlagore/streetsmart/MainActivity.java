@@ -294,8 +294,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onClick(View view) {
-        List<Fragment> fragments = getSupportFragmentManager().getFragments();
 
+        /* Start a historical activity. */
         Intent i = new Intent(this, HistoricalDataActivity.class);
         startActivity(i);
     }
