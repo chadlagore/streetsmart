@@ -34,7 +34,14 @@ import android.widget.Toast;
 public class HistoricalDataActivity extends AppCompatActivity {
 
     private final String TAG = "historical_data_activity";
+
+    /* TabHost and members */
     private TabHost tabHost = null;
+    private TabHost.TabSpec hourlyTab;
+    private TabHost.TabSpec dailyTab;
+    private TabHost.TabSpec weeklyTab;
+    private TabHost.TabSpec monthlyTab;
+    private TabHost.TabSpec yearlyTab;
 
     /**
      * A class for requesting and storing historical data from the StreetSmart API.
@@ -250,27 +257,62 @@ public class HistoricalDataActivity extends AppCompatActivity {
         TabHost.TabSpec spec = tabHost.newTabSpec("Hourly");
         spec.setContent(R.id.Hourly);
         spec.setIndicator("Hourly");
+        this.hourlyTab = spec;
         tabHost.addTab(spec);
 
         spec = tabHost.newTabSpec("Daily");
         spec.setContent(R.id.Daily);
         spec.setIndicator("Daily");
+        this.dailyTab = spec;
         tabHost.addTab(spec);
 
         spec = tabHost.newTabSpec("Weekly");
         spec.setContent(R.id.Weekly);
         spec.setIndicator("Weekly");
+        this.weeklyTab = spec;
         tabHost.addTab(spec);
 
         spec = tabHost.newTabSpec("Monthly");
         spec.setContent(R.id.Weekly);
         spec.setIndicator("Monthly");
+        this.monthlyTab = spec;
         tabHost.addTab(spec);
 
         spec = tabHost.newTabSpec("Yearly");
         spec.setContent(R.id.Weekly);
         spec.setIndicator("Yearly");
+        this.yearlyTab = spec;
         tabHost.addTab(spec);
+
+        /* We'll also need to add a listener to detect when tabs change */
+        tabHost.setOnTabChangedListener(new TabHost.OnTabChangeListener() {
+            @Override
+            public void onTabChanged(String tabId) {
+
+                /* For each tab, we'll need to retreive different
+                information from the server. Handle each case seperately */
+                if(hourlyTab.getTag().equals(tabId)) {
+                    onHourlyClick();
+                } else if (dailyTab.getTag().equals(tabId)) {
+                    onDailyClick();
+                } else if (weeklyTab.getTag().equals(tabId)) {
+                    onWeeklyClick();
+                } else if (monthlyTab.getTag().equals(tabId)) {
+                    onMonthlyClick();
+                } else if (yearlyTab.getTag().equals(tabId)) {
+                    onYearlyClick();
+
+                /* Finally, if the previous cases were exhausted, we have a
+                problem, print the tabId and gracefully exit */
+                } else {
+                    System.out.println("The selected tab was not found. The id is: " + tabId);
+                    Exception e = new Exception();
+                    e.printStackTrace();
+                    System.exit(0);
+                }
+
+            }
+        });
 
         HistoricalRequest request = new HistoricalRequest(
                 1490800000, 1490831240, "hourly", 250);
@@ -278,46 +320,41 @@ public class HistoricalDataActivity extends AppCompatActivity {
     }
 
     /**
-     * Handle hourly click.
-     * @param view
+     * Handle hourly click
      */
-    private void onHourlyClick(View view) {
+    private void onHourlyClick() {
         // HistoricalRequest request = new HistoricalRequest( ... );
         // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
     }
 
     /**
      * Handle daily click.
-     * @param view
      */
-    private void onDailyClick(View view) {
+    private void onDailyClick() {
         // HistoricalRequest request = new HistoricalRequest( ... );
         // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
     }
 
     /**
      * Handle weekly click.
-     * @param view
      */
-    private void onWeeklyClick(View view) {
+    private void onWeeklyClick() {
         // HistoricalRequest request = new HistoricalRequest( ... );
         // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
     }
 
     /**
      * Handle monthly click.
-     * @param view
      */
-    private void onMonthlyClick(View view) {
+    private void onMonthlyClick() {
         // HistoricalRequest request = new HistoricalRequest( ... );
         // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
     }
 
     /**
      * Handle yearly click.
-     * @param view
      */
-    private void onYearlyClick(View view) {
+    private void onYearlyClick() {
         // HistoricalRequest request = new HistoricalRequest( ... );
         // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
     }
