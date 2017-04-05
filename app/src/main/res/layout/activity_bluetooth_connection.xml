@@ -158,6 +158,25 @@
         android:text="NONE"
         android:textSize="20dp"/>
 
+
+    <android.support.constraint.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/gps_data_title"
+        android:layout_above="@id/update_status_button">
+
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/distance_chart"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_gravity="center"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent" />
+
+    </android.support.constraint.ConstraintLayout>
+
     <Button
         android:id="@+id/update_status_button"
         android:onClick="status"

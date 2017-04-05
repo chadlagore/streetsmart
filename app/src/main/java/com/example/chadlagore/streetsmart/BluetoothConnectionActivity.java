@@ -6,9 +6,12 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.Point;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.ParcelUuid;
+import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
@@ -19,15 +22,18 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static com.example.chadlagore.streetsmart.R.id.bluetooth_connection_toolbar;
 
@@ -46,6 +52,8 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     protected boolean streaming = false;
     protected View loader;
     protected List<AsyncTask> taskList;
+    protected LineChart distanceChart = null;
+    protected LineData distanceData = null;
 
 
     /* Constants */
@@ -73,6 +81,15 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         actionBar.setDisplayHomeAsUpEnabled(true);
         loader = findViewById(R.id.progress_wheel);
         taskList = Collections.synchronizedList(new ArrayList<AsyncTask>());
+
+        /* Set up distance plot */
+        distanceChart = (LineChart) findViewById(R.id.distance_chart);
+        List<Entry> distanceEntries = new ArrayList<Entry>();
+        distanceEntries.add(new Entry(0, 0));
+        LineDataSet dataSet = new LineDataSet(distanceEntries, "Distance Readings");
+        distanceData = new LineData(dataSet);
+        distanceChart.setData(distanceData);
+        distanceChart.invalidate();
 
         /* Create a Bluetooth Adapter */
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -131,7 +148,10 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         Log.d(BLUETOOTH, "Starting task.");
         if (task instanceof SendCalibrateCommandTask) ((SendCalibrateCommandTask) task).execute();
         else if (task instanceof GetDeviceStateTask) ((GetDeviceStateTask) task).execute();
-        else ((StreamDistanceDataTask) task).execute();
+        else {
+            streaming = true;
+            ((StreamDistanceDataTask) task).execute();
+        }
     }
 
     /**
@@ -445,6 +465,14 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         }
 
         /**
+         * Called when doInBackground finishes ONLY if .cancel(true) was called on this task
+         */
+        @Override
+        protected void onCancelled() {
+            endTask(this);
+        }
+
+        /**
          * Implicitly called when the task is done executing. This will update the UI with the
          * device UUID and name.
          */
@@ -452,7 +480,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         protected void onPostExecute(Integer calibrateResult) {
             endTask(this);
 
-            if (calibrateResult == CALIBRATION_SUCCESS){
+            if (calibrateResult == CALIBRATION_SUCCESS) {
                 String calibrationDist = receiveString(2000, this);
 
                 if (calibrationDist == null) {
@@ -496,7 +524,6 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
             if (sendString("D")) {
                 String data;
-                streaming = true;
 
                 while (streaming) {
                     data = receiveString(3000, this);
@@ -515,6 +542,17 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         protected void onProgressUpdate(String... data) {
             TextView distanceView = (TextView) findViewById(R.id.dist_reading_value);
             distanceView.setText(data[0] + " cm");
+            float distanceReading = Float.parseFloat(data[0]);
+            distanceData.addEntry(new Entry(distanceData.getEntryCount(), distanceReading), 0);
+            distanceData.removeEntry(null, 0);
+            distanceChart.notifyDataSetChanged();
+            distanceChart.invalidate();
+        }
+
+        @Override
+        protected void onCancelled() {
+            sendString("X");
+            endTask(this);
         }
 
         @Override
@@ -555,11 +593,14 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             return FAILURE;
         }
 
+        @Override
+        protected void onCancelled() {
+            endTask(this);
+        }
 
         @Override
         protected void onPostExecute(Integer result) {
             if (result == SUCCESS) {
-                /* Success */
                 String data = receiveString(5000, this);
 
                 if (data == null) {
