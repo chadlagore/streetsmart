@@ -4,6 +4,7 @@ import android.os.AsyncTask;
 import android.provider.ContactsContract;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 
 import com.jjoe64.graphview.series.DataPoint;
@@ -31,8 +32,8 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
     /**
      * A class for requesting and storing historical data from the StreetSmart API.
-     * Requests execute asyncronously, but can update the historical graph onPostExecute,
-     * so use the appropriate method to request and update graph.
+     * Requests execute asyncronously, but can update the historical graph by calling
+     * addDataPointsToChart from onPostExecute.
      */
     public class HistoricalRequest {
 
@@ -48,10 +49,10 @@ public class HistoricalDataActivity extends AppCompatActivity {
         /**
          * Create a new historical request, parameters correspond to API parameters.
          *
-         * @param start_date
-         * @param end_date
-         * @param granularity
-         * @param id
+         * @param start_date an integer representing the POSIXct timestamp of the start_date.
+         * @param end_date an integer representing the POSIXct timestamp of the end_date.
+         * @param granularity either "hourly", "daily", "weekly", "monthly", or "yearly"
+         * @param id the intersection id
          */
         public HistoricalRequest(int start_date, int end_date, String granularity, long id) {
             this.start_date = start_date;
@@ -179,13 +180,17 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
             /**
              * Updates data point aggregation progress.
-             * @param progress
+             * @param progress an integer percent of the progress complete.
              */
             @Override
             protected void onProgressUpdate(Integer... progress) {
                 setProgressPercent(progress[0]);
             }
 
+            /**
+             * Called once the aggregation of DataPoints is complete.
+             * @param result
+             */
             @Override
             protected void onPostExecute(Set<DataPoint> result) {
                 addDataPointsToChart(result);
@@ -198,15 +203,16 @@ public class HistoricalDataActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_historical_data);
+        onHourlyClick();
     }
 
     /**
      * Handle hourly click.
-     * @param view
      */
-    private void onHourlyClick(View view) {
-        // HistoricalRequest request = new HistoricalRequest( ... );
-        // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
+    private void onHourlyClick() {
+        HistoricalRequest request = new HistoricalRequest(
+                1490800000, 1490831240, "hourly", 250);
+        request.execute();
     }
 
     /**
@@ -259,5 +265,6 @@ public class HistoricalDataActivity extends AppCompatActivity {
      */
     private void addDataPointsToChart(Set<DataPoint> result) {
         /* Add datapoints to chart, adjust axes etc. */
+        Log.i(TAG, result.toString());
     }
 }
