@@ -255,7 +255,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu, menu);
+        getMenuInflater().inflate(R.menu.historical_menu, menu);
         /* Now we create the view for the historical data */
         this.tabHost = (TabHost) findViewById(R.id.tabHost);
         tabHost.setup();
