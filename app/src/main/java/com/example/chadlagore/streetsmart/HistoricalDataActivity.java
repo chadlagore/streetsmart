@@ -1,9 +1,12 @@
 package com.example.chadlagore.streetsmart;
 
 import android.os.AsyncTask;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
 import android.view.View;
 
 import com.jjoe64.graphview.series.DataPoint;
@@ -23,13 +26,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-import android.app.TabActivity;
-import android.content.Intent;
-import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.widget.TabHost;
-import android.widget.Toast;
 
 public class HistoricalDataActivity extends AppCompatActivity {
 
@@ -249,6 +246,23 @@ public class HistoricalDataActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_historical_data);
 
+        Log.i(TAG, "setting toolbar");
+        Toolbar appToolbar = (Toolbar) findViewById(R.id.historical_toolbar);
+        setSupportActionBar(appToolbar);
+
+        ActionBar actionBar = getSupportActionBar();
+
+        if (actionBar != null) {
+            Log.i(TAG, "action bar not null");
+            actionBar.setDisplayHomeAsUpEnabled(true);
+        }
+    }
+
+    // Menu icons are inflated just as they were with actionbar
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.historical_menu, menu);
         /* Now we create the view for the historical data */
         this.tabHost = (TabHost) findViewById(R.id.tabHost);
         tabHost.setup();
@@ -317,6 +331,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
         HistoricalRequest request = new HistoricalRequest(
                 1490800000, 1490831240, "hourly", 250);
         request.execute();
+        return true;
     }
 
     /**
