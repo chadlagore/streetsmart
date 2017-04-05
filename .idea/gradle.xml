@@ -9,6 +9,11 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
+            <option value="$PROJECT_DIR$/com.google.android.gms" />
+            <option value="$PROJECT_DIR$/com.google.android.gms/play-services-location" />
+            <option value="$PROJECT_DIR$/com.google.android.gms/play-services-location/10.2.1" />
+            <option value="$PROJECT_DIR$/com.google.android.gms/play-services-maps" />
+            <option value="$PROJECT_DIR$/com.google.android.gms/play-services-maps/10.2.1" />
           </set>
         </option>
         <option name="resolveModulePerSourceSet" value="false" />

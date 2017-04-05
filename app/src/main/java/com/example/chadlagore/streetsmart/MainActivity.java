@@ -12,6 +12,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.util.Log;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.Button;
 
 import com.google.android.gms.maps.GoogleMap;
@@ -27,12 +28,16 @@ import java.util.TimerTask;
 
 import static com.example.chadlagore.streetsmart.R.id.app_toolbar;
 
-public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,
+    OnClickListener {
     // need to implement onCameraIdleListener
 
     static final int DE1_CONFIG = 10;
 
-    public static MapFragment mapFragment;
+
+    public Intersection currentIntersection;
+    public MapFragment mapFragment;
+
     GoogleMap googleMap;
     Timer updateMapTimer;
     StreetSmartClient streetSmartClient;
@@ -61,6 +66,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        /* There is no current intersection yet */
+        this.currentIntersection = null;
 
         /* Expand the toolbar at the top of the screen */
         Log.i(TAG, "setting toolbar");
@@ -282,6 +290,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     @Override
+    public void onClick(View view) {
+        Intent i = new Intent(this, HistoricalDataActivity.class);
+        startActivity(i);
+    }
+
+    @Override
     public void onPause() {
         super.onPause();
         stopTimer = true;
@@ -292,6 +306,24 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Log.d(TAG, "Resuming MainActivity");
         super.onResume();
         stopTimer = false;
+    }
+
+    /**
+     * Method simply sets the current intersection. This is the last
+     * intersection which was displayed on the traffic graph.
+     *
+     * It's necessary to track this intersection because we need to know which one to
+     * request historical data for, should the user want to view this, and
+     * we have to enter the historical data activity through the main activity
+     * rather than the dialog fragment where the user click the "More" button.
+     *
+     * Note, current intersection can and should be set to null if no intersection
+     * is considered to be current.
+     *
+     * @param i the Intersection object you want to set as the current intersection.
+     */
+    void setCurrentIntersection(Intersection i) {
+        this.currentIntersection = i;
     }
 
     /**
