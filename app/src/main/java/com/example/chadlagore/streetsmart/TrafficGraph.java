@@ -56,8 +56,12 @@ public class TrafficGraph extends DialogFragment {
         // Empty constructor --use newInstance defined below
     }
 
-    public static TrafficGraph newInstance(Intersection intersection_to_graph) {
+    public TrafficGraph newInstance(Intersection intersection_to_graph) {
         intersection = intersection_to_graph;
+
+        /* If user elects to view historical data, we'll need this */
+        MainActivity activity = (MainActivity) getActivity();
+        activity.setCurrentIntersection(intersection_to_graph);
 
         /* Build graph. */
         TrafficGraph frag = new TrafficGraph();
@@ -203,6 +207,10 @@ public class TrafficGraph extends DialogFragment {
     public void onDismiss(DialogInterface dialogInterface) {
         Log.i(TAG, "cancelling");
         graphUpdateTimer.cancel();
+
+        /* There is no current intersection if the dialog fragment is not open */
+        MainActivity activity = (MainActivity) getActivity();
+        activity.setCurrentIntersection(null);
     }
 
 }
