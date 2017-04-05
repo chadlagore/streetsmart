@@ -23,9 +23,18 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import android.app.TabActivity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.TabHost;
+import android.widget.Toast;
+
 public class HistoricalDataActivity extends AppCompatActivity {
 
     private final String TAG = "historical_data_activity";
+    private TabHost tabHost = null;
 
     /**
      * A class for requesting and storing historical data from the StreetSmart API.
@@ -232,6 +241,37 @@ public class HistoricalDataActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_historical_data);
+
+        /* Now we create the view for the historical data */
+        this.tabHost = (TabHost) findViewById(R.id.tabHost);
+        tabHost.setup();
+
+        /* Set up all the tabs */
+        TabHost.TabSpec spec = tabHost.newTabSpec("Hourly");
+        spec.setContent(R.id.Hourly);
+        spec.setIndicator("Hourly");
+        tabHost.addTab(spec);
+
+        spec = tabHost.newTabSpec("Daily");
+        spec.setContent(R.id.Daily);
+        spec.setIndicator("Daily");
+        tabHost.addTab(spec);
+
+        spec = tabHost.newTabSpec("Weekly");
+        spec.setContent(R.id.Weekly);
+        spec.setIndicator("Weekly");
+        tabHost.addTab(spec);
+
+        spec = tabHost.newTabSpec("Monthly");
+        spec.setContent(R.id.Weekly);
+        spec.setIndicator("Monthly");
+        tabHost.addTab(spec);
+
+        spec = tabHost.newTabSpec("Yearly");
+        spec.setContent(R.id.Weekly);
+        spec.setIndicator("Yearly");
+        tabHost.addTab(spec);
+
         HistoricalRequest request = new HistoricalRequest(
                 1490800000, 1490831240, "hourly", 250);
         request.execute();

@@ -254,7 +254,7 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
      *               the intersections title is contained within the intersection
      *               object tagged to the marker in question.
      */
-    private static void showDialog(Marker marker) {
+    private void showDialog(Marker marker) {
 
         /* We need to collect the intersection to build the graph. */
         Long id = Long.valueOf(marker.getSnippet());

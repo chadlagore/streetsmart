@@ -58,12 +58,8 @@ public class TrafficGraph extends DialogFragment {
         // Empty constructor --use newInstance defined below
     }
 
-    public TrafficGraph newInstance(Intersection intersection_to_graph) {
+    public static TrafficGraph newInstance(Intersection intersection_to_graph) {
         intersection = intersection_to_graph;
-
-        /* If user elects to view historical data, we'll need this */
-        MainActivity activity = (MainActivity) getActivity();
-        activity.setCurrentIntersection(intersection_to_graph);
 
         /* Build graph. */
         TrafficGraph frag = new TrafficGraph();
