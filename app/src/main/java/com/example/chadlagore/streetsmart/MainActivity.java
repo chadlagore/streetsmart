@@ -36,7 +36,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
     public Intersection currentIntersection;
-    public static MapFragment mapFragment;
+    public MapFragment mapFragment;
 
     GoogleMap googleMap;
     Timer updateMapTimer;
