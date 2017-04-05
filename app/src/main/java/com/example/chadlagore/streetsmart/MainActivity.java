@@ -1,5 +1,6 @@
 package com.example.chadlagore.streetsmart;
 
+import android.nfc.Tag;
 import android.support.v7.app.AppCompatActivity;
 
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -20,6 +21,7 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -30,9 +32,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     OnClickListener {
     // need to implement onCameraIdleListener
 
-    static final int DE1_CONFIG = 1;
+    static final int DE1_CONFIG = 10;
 
-    MapFragment mapFragment;
+    public static MapFragment mapFragment;
     GoogleMap googleMap;
     Timer updateMapTimer;
     StreetSmartClient streetSmartClient;
@@ -47,6 +49,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     // app is opened, the first batch of data will be used to
     // define the elements of this array
     private HashMap<Long, Intersection> intersections = new HashMap<Long, Intersection>();
+
+    /*
+     * The intersection representing the Bluetooth device we communicate with in
+     * BluetoothConnectionActivity.
+     */
+    public static Intersection BTDeviceIntersection = null;
 
     int updateMapTime = 1000; // ms
     int updateMapDelay = 250; // ms
@@ -162,7 +170,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      * on how busy they have been during the last 30 seconds.
      */
     private void updateMapMarkers() {
-//        Log.i(TAG, "updating map markers");
+        /* Add BluetoothIntersection if there is one to add */
+        Intersection bluetoothIntersection = Globals.getBluetoothIntersection(mapFragment);
+        if (bluetoothIntersection != null) {
+            intersections.put(Globals.intersectionID, Globals.bluetoothIntersection);
+        }
 
         for (int i = 0; i < intersectionsJSON.length(); i++) {
 
@@ -223,7 +235,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      */
     private void collectNewIntersectionData(LatLngBounds bounds) {
 
-        /* Ask client to update asyncronously. */
+        /* Ask client to update asynchronously. */
         streetSmartClient.updateIntersections(bounds);
 
         /* Get latest data. */
@@ -285,6 +297,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onResume() {
+        Log.d(TAG, "Resuming MainActivity");
         super.onResume();
         stopTimer = false;
     }
