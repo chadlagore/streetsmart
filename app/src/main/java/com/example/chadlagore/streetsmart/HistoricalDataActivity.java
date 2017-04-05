@@ -25,7 +25,7 @@ import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import static com.example.chadlagore.streetsmart.R.id.historical_toolbar;
+
 import android.widget.TabHost;
 
 public class HistoricalDataActivity extends AppCompatActivity {
@@ -240,8 +240,15 @@ public class HistoricalDataActivity extends AppCompatActivity {
         setContentView(R.layout.activity_historical_data);
 
         Log.i(TAG, "setting toolbar");
-        Toolbar appToolbar = (Toolbar) findViewById(historical_toolbar);
+        Toolbar appToolbar = (Toolbar) findViewById(R.id.historical_toolbar);
         setSupportActionBar(appToolbar);
+
+        ActionBar actionBar = getSupportActionBar();
+
+        if (actionBar != null) {
+            Log.i(TAG, "action bar not null");
+            actionBar.setDisplayHomeAsUpEnabled(true);
+        }
     }
 
     // Menu icons are inflated just as they were with actionbar
