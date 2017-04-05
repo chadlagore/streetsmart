@@ -1,9 +1,12 @@
 package com.example.chadlagore.streetsmart;
 
 import android.os.AsyncTask;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
 import android.view.View;
 
 import com.jjoe64.graphview.series.DataPoint;
@@ -22,6 +25,10 @@ import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+
+import static com.example.chadlagore.streetsmart.R.id.app_toolbar;
+import static com.example.chadlagore.streetsmart.R.id.bluetooth_connection_toolbar;
+import static com.example.chadlagore.streetsmart.R.id.historical_toolbar;
 
 public class HistoricalDataActivity extends AppCompatActivity {
 
@@ -232,9 +239,18 @@ public class HistoricalDataActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_historical_data);
-        HistoricalRequest request = new HistoricalRequest(
-                1490800000, 1490831240, "hourly", 250);
-        request.execute();
+
+        Log.i(TAG, "setting toolbar");
+        Toolbar appToolbar = (Toolbar) findViewById(historical_toolbar);
+        setSupportActionBar(appToolbar);
+    }
+
+    // Menu icons are inflated just as they were with actionbar
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu, menu);
+        return true;
     }
 
     /**
