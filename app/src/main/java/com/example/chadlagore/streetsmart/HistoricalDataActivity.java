@@ -1,7 +1,6 @@
 package com.example.chadlagore.streetsmart;
 
 import android.os.AsyncTask;
-import android.provider.ContactsContract;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -9,14 +8,12 @@ import android.view.View;
 
 import com.jjoe64.graphview.series.DataPoint;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 
 import okhttp3.Call;
@@ -162,6 +159,8 @@ public class HistoricalDataActivity extends AppCompatActivity {
                         double x = Double.valueOf(key);
                         double y = Double.valueOf((Double) data.get(key));
                         results.add(new DataPoint(x,y));
+                        updateMax(x, y);
+
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -179,6 +178,17 @@ public class HistoricalDataActivity extends AppCompatActivity {
             }
 
             /**
+             * Initializes maxes and mins.
+             */
+            @Override
+            protected void onPreExecute() {
+                max_x = 0;
+                max_y = 0;
+                min_x = Integer.MAX_VALUE;
+                min_y = Integer.MAX_VALUE;
+            }
+
+            /**
              * Updates data point aggregation progress.
              * @param progress an integer percent of the progress complete.
              */
@@ -193,7 +203,26 @@ public class HistoricalDataActivity extends AppCompatActivity {
              */
             @Override
             protected void onPostExecute(Set<DataPoint> result) {
-                addDataPointsToChart(result);
+                addDataPointsToChart(result, max_x, max_y, min_x, min_y);
+            }
+
+            /**
+             * Updates max and min values during with recent values.
+             * @param x the most recent x value seen.
+             * @param y the most recent y value seen.
+             */
+            private void updateMax(double x, double y) {
+                if (x > max_x) {
+                    max_x = x;
+                } else if (x < min_x) {
+                    min_x = x;
+                }
+
+                if (y > max_y) {
+                    max_y = y;
+                } else if (y < min_y) {
+                    min_y = y;
+                }
             }
 
         }
@@ -203,16 +232,18 @@ public class HistoricalDataActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_historical_data);
-        onHourlyClick();
+        HistoricalRequest request = new HistoricalRequest(
+                1490800000, 1490831240, "hourly", 250);
+        request.execute();
     }
 
     /**
      * Handle hourly click.
+     * @param view
      */
-    private void onHourlyClick() {
-        HistoricalRequest request = new HistoricalRequest(
-                1490800000, 1490831240, "hourly", 250);
-        request.execute();
+    private void onHourlyClick(View view) {
+        // HistoricalRequest request = new HistoricalRequest( ... );
+        // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
     }
 
     /**
@@ -261,9 +292,14 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
     /**
      * Adding a set of DataPoints to a chart. Adjusts axes to fit new data.
-     * @param result
+     * @param result a Set of DataPoints (x = POSIXct timetamp, y = number of cars).
+     * @param max_x maximum timestamp in Set.
+     * @param max_y maximum cars seen in Set.
+     * @param min_x minimum timestamp in Set.
+     * @param min_y minimum cars seen in Set.
      */
-    private void addDataPointsToChart(Set<DataPoint> result) {
+    private void addDataPointsToChart(Set<DataPoint> result, double max_x, double max_y,
+                                      double min_x, double min_y) {
         /* Add datapoints to chart, adjust axes etc. */
         Log.i(TAG, result.toString());
     }
