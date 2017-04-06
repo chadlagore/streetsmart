@@ -1,6 +1,7 @@
 package com.example.chadlagore.streetsmart;
 
 import android.os.AsyncTask;
+import android.provider.ContactsContract;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -14,9 +15,17 @@ import com.jjoe64.graphview.series.DataPoint;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.io.IOException;
+import java.security.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import okhttp3.Call;
@@ -26,12 +35,15 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import android.provider.ContactsContract.CommonDataKinds.Email;
+
 import android.widget.TabHost;
 
 public class HistoricalDataActivity extends AppCompatActivity {
 
     private final String TAG = "historical_data_activity";
     private TabHost tabHost = null;
+    private final String csv_file = "street_smart_historical.csv";
 
     /**
      * A class for requesting and storing historical data from the StreetSmart API.
@@ -251,6 +263,10 @@ public class HistoricalDataActivity extends AppCompatActivity {
         /* Add back button for ancestral navigation. */
         actionBar.setDisplayHomeAsUpEnabled(true);
 
+        HistoricalRequest request = new HistoricalRequest(
+                1490200000, 1490831240, "hourly", 250);
+        request.execute();
+
     }
 
     // Menu icons are inflated just as they were with actionbar
@@ -288,9 +304,6 @@ public class HistoricalDataActivity extends AppCompatActivity {
         spec.setIndicator("Yearly");
         tabHost.addTab(spec);
 
-        HistoricalRequest request = new HistoricalRequest(
-                1490800000, 1490831240, "hourly", 250);
-        request.execute();
         return true;
     }
 
@@ -359,5 +372,67 @@ public class HistoricalDataActivity extends AppCompatActivity {
                                       double min_x, double min_y) {
         /* Add datapoints to chart, adjust axes etc. */
         Log.i(TAG, result.toString());
+    }
+
+    /**
+     * Generates a CSV file from a List of DataPoints. Saves the file to disk.
+     * We only use one CSV file on the device at a time to save the space.
+     * @param data a List of DataPoints != null.
+     */
+    private void generateCsv(List<DataPoint> data, Email email) {
+
+        /* Sort data by timestamp. */
+        Collections.sort(data, new Comparator<DataPoint>() {
+
+            @Override
+            public int compare(DataPoint dp1, DataPoint dp2) {
+                return (int)(dp1.getX() - dp2.getX());
+            }
+        });
+
+        /* Build up CSV. */
+        StringBuilder sb = new StringBuilder();
+        for (DataPoint d : data) {
+
+            /* Convert timestamp. */
+            long itemLong = (long) (d.getX() * 1000);
+            Date itemDate = new Date(itemLong);
+            String itemDateStr = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SS").format(itemDate);
+
+            /* Append a row. */
+            sb.append(String.valueOf(d.getX()));
+            sb.append(",");
+            sb.append(itemDateStr);
+            sb.append(",");
+            sb.append(String.valueOf(d.getY()));
+            sb.append("\n");
+        }
+
+        String result = sb.toString();
+
+        if (!writeToDisk(result)) {
+            Log.i(TAG, "Failed to write to disk.");
+        }
+        if (!sendUserEmail(email) {
+            Log.i(TAG, "Failed to send email to user.");
+        }
+    }
+
+    /**
+     * Writes the result to csv file. Returns false if fails.
+     * @param result the string csv file.
+     * @return false if fails.
+     */
+    private boolean writeToDisk(String result) {
+        return false;
+    }
+
+    /**
+     * Sends the user an email with the attached csv.
+     * @param email a user Email.
+     * @return false if fails.
+     */
+    private boolean sendUserEmail(Email email) {
+        return false;
     }
 }
