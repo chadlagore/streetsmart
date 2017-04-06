@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
+import android.provider.ContactsContract;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -392,8 +394,18 @@ public class HistoricalDataActivity extends AppCompatActivity {
         /* Find out which button on toolbar pushed (only one for now). */
         switch (item.getItemId()) {
             case R.id.export_button:
-                if (export(new ArrayList<DataPoint>(this.cached_result))) {
-                    sendUserEmail("inversquare@gmail.com");
+
+                /* Back out if running on emulator. */
+                if (Build.FINGERPRINT.startsWith("generic")) {
+                    Toast.makeText(this, "Export feature not supported on emulator.",
+                            Toast.LENGTH_SHORT).show();
+                    return true;
+                }
+
+                /* Convert to list and try to send email. */
+                List<DataPoint> to_csv = new ArrayList<DataPoint>(this.cached_result);
+                if (export(to_csv)) {
+                    sendUserEmail("inversquare@gmail.com" /* TODO: read in user email in GUI. */);
                 }
                 return true;
 
