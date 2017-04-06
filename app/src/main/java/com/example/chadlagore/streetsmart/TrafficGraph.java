@@ -3,6 +3,7 @@ package com.example.chadlagore.streetsmart;
 import android.app.Activity;
 import android.app.DialogFragment;
 import android.app.IntentService;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
@@ -51,6 +52,7 @@ public class TrafficGraph extends DialogFragment {
     private static TimerTask graphUpdateTimer = null;
     private static BarGraphSeries<DataPoint> series;
     private static int x;
+    private static Context context = null;
 
     public TrafficGraph() {
         // Empty constructor --use newInstance defined below
@@ -203,6 +205,10 @@ public class TrafficGraph extends DialogFragment {
     public void onDismiss(DialogInterface dialogInterface) {
         Log.i(TAG, "cancelling");
         graphUpdateTimer.cancel();
+
+        /* There is no current intersection if the dialog fragment is not open */
+        MainActivity activity = (MainActivity) getActivity();
+        activity.setCurrentIntersection(null);
     }
 
 }
