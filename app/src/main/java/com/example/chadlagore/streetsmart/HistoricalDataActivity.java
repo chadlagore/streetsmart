@@ -405,7 +405,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
                 /* Convert to list and try to send email. */
                 List<DataPoint> to_csv = new ArrayList<DataPoint>(this.cached_result);
                 if (export(to_csv)) {
-                    sendUserEmail("inversquare@gmail.com" /* TODO: read in user email in GUI. */);
+                    sendUserEmail("example@gmail.com" /* TODO: read in user email in GUI. */);
                 }
                 return true;
 
@@ -490,7 +490,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
         emailIntent.putExtra(Intent.EXTRA_TEXT, getString(R.string.hist_email_body));
 
         /* Go collect cached file. */
-        String pathToCsv= getFilesDir().toString() + "/" + csv_file;
+        String pathToCsv = getFilesDir().toString() + "/" + csv_file;
         File file = new File(pathToCsv);
 
         /* Fail if file does not exist. */
