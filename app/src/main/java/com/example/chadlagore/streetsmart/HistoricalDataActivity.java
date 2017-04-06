@@ -1,12 +1,17 @@
 package com.example.chadlagore.streetsmart;
 
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
+import android.provider.ContactsContract;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 
 import com.jjoe64.graphview.series.DataPoint;
@@ -14,9 +19,17 @@ import com.jjoe64.graphview.series.DataPoint;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import okhttp3.Call;
@@ -27,11 +40,17 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 import android.widget.TabHost;
+import android.widget.Toast;
+
+import static android.support.v4.content.FileProvider.getUriForFile;
 
 public class HistoricalDataActivity extends AppCompatActivity {
 
     private final String TAG = "historical_data_activity";
     private TabHost tabHost = null;
+    private final String csv_file = "street_smart_historical.csv";
+    private File cache_dir;
+    private Set<DataPoint> cached_result;
 
     /**
      * A class for requesting and storing historical data from the StreetSmart API.
@@ -251,6 +270,11 @@ public class HistoricalDataActivity extends AppCompatActivity {
         /* Add back button for ancestral navigation. */
         actionBar.setDisplayHomeAsUpEnabled(true);
 
+        /* TODO: delete this mock request. */
+        HistoricalRequest request = new HistoricalRequest(
+                1490200000, 1490831240, "hourly", 250);
+        request.execute();
+
     }
 
     // Menu icons are inflated just as they were with actionbar
@@ -288,9 +312,6 @@ public class HistoricalDataActivity extends AppCompatActivity {
         spec.setIndicator("Yearly");
         tabHost.addTab(spec);
 
-        HistoricalRequest request = new HistoricalRequest(
-                1490800000, 1490831240, "hourly", 250);
-        request.execute();
         return true;
     }
 
@@ -358,6 +379,139 @@ public class HistoricalDataActivity extends AppCompatActivity {
     private void addDataPointsToChart(Set<DataPoint> result, double max_x, double max_y,
                                       double min_x, double min_y) {
         /* Add datapoints to chart, adjust axes etc. */
-        Log.i(TAG, result.toString());
+        this.cached_result = result;
+    }
+
+
+    /**
+     * Handles click of Export button in HistoricalDataActivity.
+     * Starts by writing the cached_result to disk as csv, then
+     * attempts to send an email (with the cached csv as an attachment).
+     * @param item
+     */
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        /* Find out which button on toolbar pushed (only one for now). */
+        switch (item.getItemId()) {
+            case R.id.export_button:
+
+                /* Back out if running on emulator. */
+                if (Build.FINGERPRINT.startsWith("generic")) {
+                    Toast.makeText(this, "Export feature not supported on emulator.",
+                            Toast.LENGTH_SHORT).show();
+                    return true;
+                }
+
+                /* Convert to list and try to send email. */
+                List<DataPoint> to_csv = new ArrayList<DataPoint>(this.cached_result);
+                if (export(to_csv)) {
+                    sendUserEmail("example@gmail.com" /* TODO: read in user email in GUI. */);
+                }
+                return true;
+
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    /**
+     * Generates a CSV file from a List of DataPoints. Saves the file to disk.
+     * We only use one CSV file on the device at a time to save the space.
+     * @param data a List of DataPoints != null.
+     * @return false if could not save to file.
+     */
+    private boolean export(List<DataPoint> data) {
+
+        /* Sort data by timestamp. */
+        Collections.sort(data, new Comparator<DataPoint>() {
+
+            @Override
+            public int compare(DataPoint dp1, DataPoint dp2) {
+                return (int)(dp1.getX() - dp2.getX());
+            }
+        });
+
+        /* Build up CSV. */
+        StringBuilder sb = new StringBuilder();
+        sb.append("timestamp,datetime,cars\n");
+
+        for (DataPoint d : data) {
+
+            /* Convert timestamp. */
+            long itemLong = (long) (d.getX() * 1000);
+            Date itemDate = new Date(itemLong);
+            String itemDateStr = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SS").format(itemDate);
+
+            /* Append a row. */
+            sb.append(String.valueOf(d.getX()));
+            sb.append(",");
+            sb.append(itemDateStr);
+            sb.append(",");
+            sb.append(String.valueOf(d.getY()));
+            sb.append("\n");
+        }
+
+        return writeCsvToDisk(sb.toString());
+    }
+
+    /**
+     * Writes the result to csv file. Returns false if fails.
+     * @param result the string csv file.
+     * @return false if fails.
+     */
+    private boolean writeCsvToDisk(String result) {
+        FileOutputStream outputStream;
+
+        try {
+            outputStream = openFileOutput(this.csv_file, Context.MODE_PRIVATE);
+            outputStream.write(result.getBytes());
+            outputStream.close();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Sends the user an email with the attached csv.
+     * @param email a user Email.
+     * @return false if fails.
+     */
+    private boolean sendUserEmail(String email) {
+
+        /* Set up email intent. */
+        Intent emailIntent = new Intent(Intent.ACTION_SEND);
+        emailIntent.setType("text/plain");
+        emailIntent.putExtra(Intent.EXTRA_EMAIL, new String[] {email});
+        emailIntent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.hist_email_subject));
+        emailIntent.putExtra(Intent.EXTRA_TEXT, getString(R.string.hist_email_body));
+
+        /* Go collect cached file. */
+        String pathToCsv = getFilesDir().toString() + "/" + csv_file;
+        File file = new File(pathToCsv);
+
+        /* Fail if file does not exist. */
+        if (!file.exists()) {
+            return false;
+        } else if (!file.canRead()) {
+            return false;
+        }
+
+        /* Stream file into email intent. */
+        Uri contentUri = getUriForFile(this, "com.chadlagore.fileprovider", file);
+        emailIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+
+        /* Try to send the email. */
+        try {
+            startActivity(Intent.createChooser(emailIntent, "Send mail..."));
+            return true;
+        } catch (android.content.ActivityNotFoundException ex) {
+            Toast.makeText(this, "There are no email clients installed.",
+                    Toast.LENGTH_SHORT).show();
+            return false;
+        }
     }
 }
