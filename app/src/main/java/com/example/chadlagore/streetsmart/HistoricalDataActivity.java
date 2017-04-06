@@ -1,14 +1,17 @@
 package com.example.chadlagore.streetsmart;
 
 import android.os.AsyncTask;
+import android.support.v4.view.LayoutInflaterFactory;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
 
+import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
 
 import org.json.JSONException;
@@ -26,6 +29,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import android.widget.FrameLayout;
 import android.widget.TabHost;
 
 public class HistoricalDataActivity extends AppCompatActivity {
@@ -328,9 +332,11 @@ public class HistoricalDataActivity extends AppCompatActivity {
             }
         });
 
-        HistoricalRequest request = new HistoricalRequest(
-                1490800000, 1490831240, "hourly", 250);
-        request.execute();
+//        HistoricalRequest request = new HistoricalRequest(
+//                1490800000, 1490831240, "hourly", 250);
+//        request.execute();
+//        return true;
+
         return true;
     }
 
@@ -338,8 +344,43 @@ public class HistoricalDataActivity extends AppCompatActivity {
      * Handle hourly click
      */
     private void onHourlyClick() {
-        // HistoricalRequest request = new HistoricalRequest( ... );
-        // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
+
+        /* Make graphs invisible */
+        makeGraphsInvisible();
+
+        /* Now make the relevant graph visible */
+        final LayoutInflater factory = getLayoutInflater();
+        final View v = factory.inflate(R.layout.activity_historical_data, null);
+        View graph = (GraphView) v.findViewById(R.id.hourly_graph);
+        graph.setVisibility(View.VISIBLE);
+
+        //HistoricalRequest request = new HistoricalRequest();
+        //request.execute();
+    }
+
+    /**
+     * Method simply sets each graph view in the historical data
+     * layout to invisible. This is necessary because the views will
+     * otherwise overlap.
+     */
+    private void makeGraphsInvisible() {
+        final LayoutInflater inf = getLayoutInflater();
+        final View view = inf.inflate(R.layout.activity_historical_data, null);
+
+        GraphView gv = (GraphView) view.findViewById(R.id.hourly_graph);
+        gv.setVisibility(View.INVISIBLE);
+
+        gv = (GraphView) view.findViewById(R.id.daily_graph);
+        gv.setVisibility(View.INVISIBLE);
+
+        gv = (GraphView) view.findViewById(R.id.weekly_graph);
+        gv.setVisibility(View.INVISIBLE);
+
+        gv = (GraphView) view.findViewById(R.id.monthly_graph);
+        gv.setVisibility(View.INVISIBLE);
+
+        gv = (GraphView) view.findViewById(R.id.yearly_graph);
+        gv.setVisibility(View.INVISIBLE);
     }
 
     /**
@@ -393,6 +434,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
     private void addDataPointsToChart(Set<DataPoint> result, double max_x, double max_y,
                                       double min_x, double min_y) {
         /* Add datapoints to chart, adjust axes etc. */
+        tabHost.getCurrentTabTag()
         Log.i(TAG, result.toString());
     }
 }
