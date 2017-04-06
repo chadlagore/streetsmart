@@ -1,36 +1,25 @@
 package com.example.chadlagore.streetsmart;
 
 import android.content.Context;
-import android.content.ContextWrapper;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Environment;
-import android.provider.ContactsContract;
-import android.support.v4.app.FragmentManager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
-import com.google.android.gms.maps.GoogleMap;
 import com.jjoe64.graphview.series.DataPoint;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
-import java.security.AccessController;
-import java.security.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,13 +37,10 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-import android.provider.ContactsContract.CommonDataKinds.Email;
-
 import android.widget.TabHost;
 import android.widget.Toast;
 
 import static android.support.v4.content.FileProvider.getUriForFile;
-import static java.security.AccessController.getContext;
 
 public class HistoricalDataActivity extends AppCompatActivity {
 
@@ -282,6 +268,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
         /* Add back button for ancestral navigation. */
         actionBar.setDisplayHomeAsUpEnabled(true);
 
+        /* TODO: delete this mock request. */
         HistoricalRequest request = new HistoricalRequest(
                 1490200000, 1490831240, "hourly", 250);
         request.execute();
@@ -401,14 +388,13 @@ public class HistoricalDataActivity extends AppCompatActivity {
      * @param item
      */
     public boolean onOptionsItemSelected(MenuItem item) {
-        Log.d(TAG, "options clicked");
 
+        /* Find out which button on toolbar pushed (only one for now). */
         switch (item.getItemId()) {
             case R.id.export_button:
                 if (export(new ArrayList<DataPoint>(this.cached_result))) {
                     sendUserEmail("inversquare@gmail.com");
                 }
-
                 return true;
 
             default:
