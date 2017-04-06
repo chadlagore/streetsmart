@@ -1,5 +1,8 @@
 package com.example.chadlagore.streetsmart;
 
+import android.app.DatePickerDialog;
+import android.app.Dialog;
+import android.app.DialogFragment;
 import android.os.AsyncTask;
 import android.support.v4.view.LayoutInflaterFactory;
 import android.support.v7.app.ActionBar;
@@ -13,11 +16,14 @@ import android.view.View;
 
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
+import android.view.View;
+import android.view.View.OnClickListener;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -29,6 +35,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import android.widget.DatePicker;
 import android.widget.FrameLayout;
 import android.widget.TabHost;
 
@@ -340,6 +347,32 @@ public class HistoricalDataActivity extends AppCompatActivity {
         return true;
     }
 
+    public static class DatePickerFragment extends DialogFragment implements
+            DatePickerDialog.OnDateSetListener {
+
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            final Calendar c = Calendar.getInstance();
+            int year = c.get(Calendar.YEAR);
+            int month = c.get(Calendar.MONTH);
+            int day = c.get(Calendar.DAY_OF_MONTH);
+
+            return new DatePickerDialog(getActivity(), this, year, month, day);
+        }
+
+        public void onDateSet(DatePicker dp, int year, int month, int day) {
+
+        }
+    }
+
+    public void OnEndDayClick() {
+
+    }
+
+    public void onStartDayClick() {
+
+    }
+
     /**
      * Handle hourly click
      */
@@ -434,7 +467,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
     private void addDataPointsToChart(Set<DataPoint> result, double max_x, double max_y,
                                       double min_x, double min_y) {
         /* Add datapoints to chart, adjust axes etc. */
-        tabHost.getCurrentTabTag()
+        //tabHost.getCurrentTabTag()
         Log.i(TAG, result.toString());
     }
 }
