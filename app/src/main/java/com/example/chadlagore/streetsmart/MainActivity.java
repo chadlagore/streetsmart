@@ -1,6 +1,8 @@
 package com.example.chadlagore.streetsmart;
 
 import android.nfc.Tag;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -23,6 +25,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -291,6 +294,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onClick(View view) {
+
+        /* Start a historical activity. */
         Intent i = new Intent(this, HistoricalDataActivity.class);
         startActivity(i);
     }
