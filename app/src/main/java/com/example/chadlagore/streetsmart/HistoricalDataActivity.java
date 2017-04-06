@@ -1,17 +1,29 @@
 package com.example.chadlagore.streetsmart;
 
+import android.app.DatePickerDialog;
+import android.app.Dialog;
+import android.app.DialogFragment;
 import android.os.AsyncTask;
+import android.support.v4.view.LayoutInflaterFactory;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.View;
 
+import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
+import android.view.View;
+import android.view.View.OnClickListener;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -23,18 +35,21 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-import android.app.TabActivity;
-import android.content.Intent;
-import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.widget.DatePicker;
+import android.widget.FrameLayout;
 import android.widget.TabHost;
-import android.widget.Toast;
 
 public class HistoricalDataActivity extends AppCompatActivity {
 
     private final String TAG = "historical_data_activity";
+
+    /* TabHost and members */
     private TabHost tabHost = null;
+    private TabHost.TabSpec hourlyTab;
+    private TabHost.TabSpec dailyTab;
+    private TabHost.TabSpec weeklyTab;
+    private TabHost.TabSpec monthlyTab;
+    private TabHost.TabSpec yearlyTab;
 
     /**
      * A class for requesting and storing historical data from the StreetSmart API.
@@ -242,6 +257,23 @@ public class HistoricalDataActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_historical_data);
 
+        Log.i(TAG, "setting toolbar");
+        Toolbar appToolbar = (Toolbar) findViewById(R.id.historical_toolbar);
+        setSupportActionBar(appToolbar);
+
+        ActionBar actionBar = getSupportActionBar();
+
+        if (actionBar != null) {
+            Log.i(TAG, "action bar not null");
+            actionBar.setDisplayHomeAsUpEnabled(true);
+        }
+    }
+
+    // Menu icons are inflated just as they were with actionbar
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.historical_menu, menu);
         /* Now we create the view for the historical data */
         this.tabHost = (TabHost) findViewById(R.id.tabHost);
         tabHost.setup();
@@ -250,74 +282,168 @@ public class HistoricalDataActivity extends AppCompatActivity {
         TabHost.TabSpec spec = tabHost.newTabSpec("Hourly");
         spec.setContent(R.id.Hourly);
         spec.setIndicator("Hourly");
+        this.hourlyTab = spec;
         tabHost.addTab(spec);
 
         spec = tabHost.newTabSpec("Daily");
         spec.setContent(R.id.Daily);
         spec.setIndicator("Daily");
+        this.dailyTab = spec;
         tabHost.addTab(spec);
 
         spec = tabHost.newTabSpec("Weekly");
         spec.setContent(R.id.Weekly);
         spec.setIndicator("Weekly");
+        this.weeklyTab = spec;
         tabHost.addTab(spec);
 
         spec = tabHost.newTabSpec("Monthly");
         spec.setContent(R.id.Weekly);
         spec.setIndicator("Monthly");
+        this.monthlyTab = spec;
         tabHost.addTab(spec);
 
         spec = tabHost.newTabSpec("Yearly");
         spec.setContent(R.id.Weekly);
         spec.setIndicator("Yearly");
+        this.yearlyTab = spec;
         tabHost.addTab(spec);
 
-        HistoricalRequest request = new HistoricalRequest(
-                1490800000, 1490831240, "hourly", 250);
-        request.execute();
+        /* We'll also need to add a listener to detect when tabs change */
+        tabHost.setOnTabChangedListener(new TabHost.OnTabChangeListener() {
+            @Override
+            public void onTabChanged(String tabId) {
+
+                /* For each tab, we'll need to retreive different
+                information from the server. Handle each case seperately */
+                if(hourlyTab.getTag().equals(tabId)) {
+                    onHourlyClick();
+                } else if (dailyTab.getTag().equals(tabId)) {
+                    onDailyClick();
+                } else if (weeklyTab.getTag().equals(tabId)) {
+                    onWeeklyClick();
+                } else if (monthlyTab.getTag().equals(tabId)) {
+                    onMonthlyClick();
+                } else if (yearlyTab.getTag().equals(tabId)) {
+                    onYearlyClick();
+
+                /* Finally, if the previous cases were exhausted, we have a
+                problem, print the tabId and gracefully exit */
+                } else {
+                    System.out.println("The selected tab was not found. The id is: " + tabId);
+                    Exception e = new Exception();
+                    e.printStackTrace();
+                    System.exit(0);
+                }
+
+            }
+        });
+
+//        HistoricalRequest request = new HistoricalRequest(
+//                1490800000, 1490831240, "hourly", 250);
+//        request.execute();
+//        return true;
+
+        return true;
+    }
+
+    public static class DatePickerFragment extends DialogFragment implements
+            DatePickerDialog.OnDateSetListener {
+
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            final Calendar c = Calendar.getInstance();
+            int year = c.get(Calendar.YEAR);
+            int month = c.get(Calendar.MONTH);
+            int day = c.get(Calendar.DAY_OF_MONTH);
+
+            return new DatePickerDialog(getActivity(), this, year, month, day);
+        }
+
+        public void onDateSet(DatePicker dp, int year, int month, int day) {
+
+        }
+    }
+
+    public void OnEndDayClick() {
+
+    }
+
+    public void onStartDayClick() {
+
     }
 
     /**
-     * Handle hourly click.
-     * @param view
+     * Handle hourly click
      */
-    private void onHourlyClick(View view) {
-        // HistoricalRequest request = new HistoricalRequest( ... );
-        // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
+    private void onHourlyClick() {
+
+        /* Make graphs invisible */
+        makeGraphsInvisible();
+
+        /* Now make the relevant graph visible */
+        final LayoutInflater factory = getLayoutInflater();
+        final View v = factory.inflate(R.layout.activity_historical_data, null);
+        View graph = (GraphView) v.findViewById(R.id.hourly_graph);
+        graph.setVisibility(View.VISIBLE);
+
+        //HistoricalRequest request = new HistoricalRequest();
+        //request.execute();
+    }
+
+    /**
+     * Method simply sets each graph view in the historical data
+     * layout to invisible. This is necessary because the views will
+     * otherwise overlap.
+     */
+    private void makeGraphsInvisible() {
+        final LayoutInflater inf = getLayoutInflater();
+        final View view = inf.inflate(R.layout.activity_historical_data, null);
+
+        GraphView gv = (GraphView) view.findViewById(R.id.hourly_graph);
+        gv.setVisibility(View.INVISIBLE);
+
+        gv = (GraphView) view.findViewById(R.id.daily_graph);
+        gv.setVisibility(View.INVISIBLE);
+
+        gv = (GraphView) view.findViewById(R.id.weekly_graph);
+        gv.setVisibility(View.INVISIBLE);
+
+        gv = (GraphView) view.findViewById(R.id.monthly_graph);
+        gv.setVisibility(View.INVISIBLE);
+
+        gv = (GraphView) view.findViewById(R.id.yearly_graph);
+        gv.setVisibility(View.INVISIBLE);
     }
 
     /**
      * Handle daily click.
-     * @param view
      */
-    private void onDailyClick(View view) {
+    private void onDailyClick() {
         // HistoricalRequest request = new HistoricalRequest( ... );
         // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
     }
 
     /**
      * Handle weekly click.
-     * @param view
      */
-    private void onWeeklyClick(View view) {
+    private void onWeeklyClick() {
         // HistoricalRequest request = new HistoricalRequest( ... );
         // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
     }
 
     /**
      * Handle monthly click.
-     * @param view
      */
-    private void onMonthlyClick(View view) {
+    private void onMonthlyClick() {
         // HistoricalRequest request = new HistoricalRequest( ... );
         // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
     }
 
     /**
      * Handle yearly click.
-     * @param view
      */
-    private void onYearlyClick(View view) {
+    private void onYearlyClick() {
         // HistoricalRequest request = new HistoricalRequest( ... );
         // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
     }
@@ -341,6 +467,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
     private void addDataPointsToChart(Set<DataPoint> result, double max_x, double max_y,
                                       double min_x, double min_y) {
         /* Add datapoints to chart, adjust axes etc. */
+        //tabHost.getCurrentTabTag()
         Log.i(TAG, result.toString());
     }
 }

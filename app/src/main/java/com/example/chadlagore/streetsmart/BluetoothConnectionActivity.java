@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static com.example.chadlagore.streetsmart.R.id.bluetooth_connection_toolbar;
 

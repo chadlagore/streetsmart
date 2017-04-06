@@ -211,4 +211,11 @@ public class TrafficGraph extends DialogFragment {
         activity.setCurrentIntersection(null);
     }
 
+    @Override
+    public void onPause() {
+        Log.i(TAG, "dismissing fragment");
+        super.onPause();
+        this.dismiss();
+    }
+
 }
