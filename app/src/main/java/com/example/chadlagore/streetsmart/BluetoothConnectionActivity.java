@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.ParcelUuid;
@@ -84,11 +85,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
         /* Set up distance plot */
         chart = (LineChart) findViewById(R.id.distance_chart);
-        List<Entry> distanceEntries = new ArrayList<Entry>();
-        distanceEntries.add(new Entry(0, 0));
-        LineDataSet dataSet = new LineDataSet(distanceEntries, "Distance Readings");
-        distanceData = new LineData(dataSet);
-        carCountData = new LineData(dataSet);
+        initDataSets();
         chart.setData(distanceData);
         chart.invalidate();
 
@@ -116,6 +113,21 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
                 task.execute();
             }
         }
+    }
+
+    /**
+     * Resets the distance and car counts datasets.
+     */
+    private void initDataSets() {
+        List<Entry> distanceEntries = new ArrayList<Entry>();
+        distanceEntries.add(new Entry(0, 0));
+        LineDataSet dataSet = new LineDataSet(distanceEntries, "Remote Device Data");
+        dataSet.setValueTextColor(Color.WHITE);
+        dataSet.setValueTextColor(Color.WHITE);
+        distanceData = new LineData(dataSet);
+        carCountData = new LineData(dataSet);
+        chart.notifyDataSetChanged();
+        chart.invalidate();
     }
 
     /**
@@ -170,12 +182,14 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         }
         else if (task instanceof StreamCarCountTask) {
             streaming = true;
+            initDataSets();
             chart.setData(carCountData);
             chart.notifyDataSetChanged();
             ((StreamCarCountTask) task).execute();
         }
         else {
             streaming = true;
+            initDataSets();
             chart.setData(distanceData);
             chart.notifyDataSetChanged();
             ((StreamDistanceDataTask) task).execute();
@@ -593,10 +607,8 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             distanceData.addEntry(new Entry(distanceData.getEntryCount(), distanceReading), 0);
 
             /* If the chart is getting full remove its first data point */
-            if (distanceData.getDataSetCount() >= 10) {
-                Log.d(BLUETOOTH, "Removing entry from distance chart");
-                distanceData.removeEntry(firstDistanceEntryIndex, 0);
-                firstDistanceEntryIndex++;
+            if (distanceData.getEntryCount() >= 10) {
+                distanceData.removeEntry(distanceData.getXMin(), 0);
             }
 
             chart.notifyDataSetChanged();
@@ -606,6 +618,8 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         @Override
         protected void onCancelled() {
             sendString("X");
+            Button streamButton = (Button) findViewById(R.id.stream_car_count_button);
+            streamButton.setText("STREAM DISTANCE DATA");
             endTask(this);
         }
 
@@ -735,13 +749,11 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             int carCount = Integer.parseInt(data[0]);
             Log.d(BLUETOOTH, "Updating car count graph");
 
-            // TODO: getEntryCount might be a problem
             carCountData.addEntry(new Entry(carCountData.getEntryCount(), carCount), 0);
 
             /* If the chart is getting full remove its first data point */
-            if (carCountData.getDataSetCount() >= 10) {
-                carCountData.removeEntry(firstCarCountEntryIndex, 0);
-                firstCarCountEntryIndex++;
+            if (carCountData.getEntryCount() >= 10) {
+                carCountData.removeEntry(carCountData.getXMin(), 0);
             }
 
             chart.notifyDataSetChanged();
@@ -752,6 +764,8 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         protected void onCancelled() {
             sendString("X");
             endTask(this);
+            Button streamButton = (Button) findViewById(R.id.stream_car_count_button);
+            streamButton.setText("STREAM CAR COUNT");
         }
 
         @Override
