@@ -3,6 +3,7 @@ package com.example.chadlagore.streetsmart;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.support.v4.view.LayoutInflaterFactory;
 import android.content.Context;
@@ -11,6 +12,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.provider.ContactsContract;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -21,6 +23,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
 import android.view.View;
@@ -32,6 +38,7 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -62,16 +69,53 @@ public class HistoricalDataActivity extends AppCompatActivity {
     private final String TAG = "historical_data_activity";
 
     /* TabHost and members */
-    private TabHost tabHost = null;
-    private TabHost.TabSpec hourlyTab;
-    private TabHost.TabSpec dailyTab;
-    private TabHost.TabSpec weeklyTab;
-    private TabHost.TabSpec monthlyTab;
-    private TabHost.TabSpec yearlyTab;
-
+    private LineData hourlyData;
+    private LineData dailyData;
+    private LineData weeklyData;
+    private LineData monthlyData;
+    private LineData yearlyData;
+    private LineData currentDataset;
+    private LineChart historicalChart;
     private final String csv_file = "street_smart_historical.csv";
     private File cache_dir;
     private Set<DataPoint> cached_result;
+
+
+    /**
+     * Set content view, add toolbar.
+     * @param savedInstanceState
+     */
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_historical_data);
+
+        /* Generate toolbar at top of activity. */
+        Toolbar appToolbar = (Toolbar) findViewById(R.id.historical_toolbar);
+        setSupportActionBar(appToolbar);
+        ActionBar actionBar = getSupportActionBar();
+
+        /* Add back button for ancestral navigation. */
+        actionBar.setDisplayHomeAsUpEnabled(true);
+
+        /* Set up historical data plot */
+        historicalChart = (LineChart) findViewById(R.id.historical_chart);
+
+        List<Entry> dummyEntries = new ArrayList<Entry>();
+        dummyEntries.add(new Entry(0, 0));
+        LineDataSet dataSet = new LineDataSet(dummyEntries, "Historical Data");
+        dataSet.setValueTextColor(Color.WHITE);
+        hourlyData = new LineData(dataSet);
+        dailyData = new LineData(dataSet);
+        weeklyData = new LineData(dataSet);
+        monthlyData = new LineData(dataSet);
+        yearlyData = new LineData(dataSet);
+        hourlyData = new LineData(dataSet);
+        currentDataset = hourlyData;
+        historicalChart.setData(hourlyData);
+        historicalChart.notifyDataSetChanged();
+        historicalChart.invalidate();
+    }
 
     /**
      * A class for requesting and storing historical data from the StreetSmart API.
@@ -80,7 +124,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
      */
     public class HistoricalRequest {
 
-        private final String base_url = "tranquil-shore-92989.herokuapp.com";;
+        private final String base_url = "tranquil-shore-92989.herokuapp.com";
         private final String TAG = "historical_request";
         private int start_date;
         private int end_date;
@@ -274,105 +318,11 @@ public class HistoricalDataActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Set content view, add toolbar.
-     * @param savedInstanceState
-     */
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_historical_data);
-
-        /* Generate toolbar at top of activity. */
-        Toolbar appToolbar = (Toolbar) findViewById(R.id.historical_toolbar);
-        setSupportActionBar(appToolbar);
-        ActionBar actionBar = getSupportActionBar();
-
-        /* Add back button for ancestral navigation. */
-        actionBar.setDisplayHomeAsUpEnabled(true);
-
-        /* TODO: delete this mock request. */
-        HistoricalRequest request = new HistoricalRequest(
-                1490200000, 1490831240, "hourly", 250);
-        request.execute();
-
-    }
-
     // Menu icons are inflated just as they were with actionbar
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
+        Log.d(TAG, "Inflating toolbar");
         getMenuInflater().inflate(R.menu.historical_menu, menu);
-        /* Now we create the view for the historical data */
-        this.tabHost = (TabHost) findViewById(R.id.tabHost);
-        tabHost.setup();
-
-        /* Set up all the tabs */
-        TabHost.TabSpec spec = tabHost.newTabSpec("Hourly");
-        spec.setContent(R.id.Hourly);
-        spec.setIndicator("Hourly");
-        this.hourlyTab = spec;
-        tabHost.addTab(spec);
-
-        spec = tabHost.newTabSpec("Daily");
-        spec.setContent(R.id.Daily);
-        spec.setIndicator("Daily");
-        this.dailyTab = spec;
-        tabHost.addTab(spec);
-
-        spec = tabHost.newTabSpec("Weekly");
-        spec.setContent(R.id.Weekly);
-        spec.setIndicator("Weekly");
-        this.weeklyTab = spec;
-        tabHost.addTab(spec);
-
-        spec = tabHost.newTabSpec("Monthly");
-        spec.setContent(R.id.Weekly);
-        spec.setIndicator("Monthly");
-        this.monthlyTab = spec;
-        tabHost.addTab(spec);
-
-        spec = tabHost.newTabSpec("Yearly");
-        spec.setContent(R.id.Weekly);
-        spec.setIndicator("Yearly");
-        this.yearlyTab = spec;
-        tabHost.addTab(spec);
-
-        /* We'll also need to add a listener to detect when tabs change */
-        tabHost.setOnTabChangedListener(new TabHost.OnTabChangeListener() {
-            @Override
-            public void onTabChanged(String tabId) {
-
-                /* For each tab, we'll need to retreive different
-                information from the server. Handle each case seperately */
-                if(hourlyTab.getTag().equals(tabId)) {
-                    onHourlyClick();
-                } else if (dailyTab.getTag().equals(tabId)) {
-                    onDailyClick();
-                } else if (weeklyTab.getTag().equals(tabId)) {
-                    onWeeklyClick();
-                } else if (monthlyTab.getTag().equals(tabId)) {
-                    onMonthlyClick();
-                } else if (yearlyTab.getTag().equals(tabId)) {
-                    onYearlyClick();
-
-                /* Finally, if the previous cases were exhausted, we have a
-                problem, print the tabId and gracefully exit */
-                } else {
-                    System.out.println("The selected tab was not found. The id is: " + tabId);
-                    Exception e = new Exception();
-                    e.printStackTrace();
-                    System.exit(0);
-                }
-
-            }
-        });
-
-//        HistoricalRequest request = new HistoricalRequest(
-//                1490800000, 1490831240, "hourly", 250);
-//        request.execute();
-//        return true;
-
         return true;
     }
 
@@ -394,87 +344,12 @@ public class HistoricalDataActivity extends AppCompatActivity {
         }
     }
 
-    public void OnEndDayClick() {
+    public void OnEndDayClick(View view) {
 
     }
 
-    public void onStartDayClick() {
+    public void onStartDayClick(View view) {
 
-    }
-
-    /**
-     * Handle hourly click
-     */
-    private void onHourlyClick() {
-
-        /* Make graphs invisible */
-        makeGraphsInvisible();
-
-        /* Now make the relevant graph visible */
-        final LayoutInflater factory = getLayoutInflater();
-        final View v = factory.inflate(R.layout.activity_historical_data, null);
-        View graph = (GraphView) v.findViewById(R.id.hourly_graph);
-        graph.setVisibility(View.VISIBLE);
-
-        //HistoricalRequest request = new HistoricalRequest();
-        //request.execute();
-    }
-
-    /**
-     * Method simply sets each graph view in the historical data
-     * layout to invisible. This is necessary because the views will
-     * otherwise overlap.
-     */
-    private void makeGraphsInvisible() {
-        final LayoutInflater inf = getLayoutInflater();
-        final View view = inf.inflate(R.layout.activity_historical_data, null);
-
-        GraphView gv = (GraphView) view.findViewById(R.id.hourly_graph);
-        gv.setVisibility(View.INVISIBLE);
-
-        gv = (GraphView) view.findViewById(R.id.daily_graph);
-        gv.setVisibility(View.INVISIBLE);
-
-        gv = (GraphView) view.findViewById(R.id.weekly_graph);
-        gv.setVisibility(View.INVISIBLE);
-
-        gv = (GraphView) view.findViewById(R.id.monthly_graph);
-        gv.setVisibility(View.INVISIBLE);
-
-        gv = (GraphView) view.findViewById(R.id.yearly_graph);
-        gv.setVisibility(View.INVISIBLE);
-    }
-
-    /**
-     * Handle daily click.
-     */
-    private void onDailyClick() {
-        // HistoricalRequest request = new HistoricalRequest( ... );
-        // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
-    }
-
-    /**
-     * Handle weekly click.
-     */
-    private void onWeeklyClick() {
-        // HistoricalRequest request = new HistoricalRequest( ... );
-        // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
-    }
-
-    /**
-     * Handle monthly click.
-     */
-    private void onMonthlyClick() {
-        // HistoricalRequest request = new HistoricalRequest( ... );
-        // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
-    }
-
-    /**
-     * Handle yearly click.
-     */
-    private void onYearlyClick() {
-        // HistoricalRequest request = new HistoricalRequest( ... );
-        // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
     }
 
     /**
@@ -509,11 +384,27 @@ public class HistoricalDataActivity extends AppCompatActivity {
      * @param item
      */
     public boolean onOptionsItemSelected(MenuItem item) {
+        Log.d(TAG, "Menu item clicked.");
+        HistoricalRequest request = null;
 
         /* Find out which button on toolbar pushed (only one for now). */
         switch (item.getItemId()) {
-            case R.id.export_button:
+            case R.id.hourly_button:
+                Log.d(TAG, "Showing hourly data.");
+                currentDataset = hourlyData;
+                request = new HistoricalRequest(1491350400, 1491515080, "hourly", 1);
+                break;
 
+            case R.id.daily_button:
+                break;
+            case R.id.weekly_button:
+                break;
+            case R.id.monthly_button:
+                break;
+            case R.id.yearly_button:
+                break;
+
+            case R.id.export_button:
                 /* Back out if running on emulator. */
                 if (Build.FINGERPRINT.startsWith("generic")) {
                     Toast.makeText(this, "Export feature not supported on emulator.",
@@ -533,6 +424,11 @@ public class HistoricalDataActivity extends AppCompatActivity {
                 // Invoke the superclass to handle it.
                 return super.onOptionsItemSelected(item);
         }
+
+        if (request != null) {
+            request.execute();
+        }
+        return true;
     }
 
     /**
