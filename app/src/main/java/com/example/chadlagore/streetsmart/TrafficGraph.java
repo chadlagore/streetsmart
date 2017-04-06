@@ -213,8 +213,9 @@ public class TrafficGraph extends DialogFragment {
 
     @Override
     public void onPause() {
-        Log.i(TAG, "dismissing fragment");
         super.onPause();
+
+        /* On pause, simply dismiss this fragment. */
         this.dismiss();
     }
 
