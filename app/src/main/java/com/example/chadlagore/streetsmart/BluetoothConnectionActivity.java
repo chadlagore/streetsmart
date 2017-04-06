@@ -20,7 +20,11 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.data.BarData;
+import com.github.mikephil.charting.data.BarDataSet;
+import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
@@ -50,11 +54,9 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
     protected boolean streaming = false;
     protected View loader;
     protected List<AsyncTask> taskList;
-    protected LineChart chart = null;
-    protected LineData distanceData = null;
-    protected LineData carCountData = null;
-    protected int firstDistanceEntryIndex = 0;
-    protected int firstCarCountEntryIndex = 0;
+    protected BarChart chart = null;
+    protected BarData distanceData = null;
+    protected BarData carCountData = null;
 
 
     /* Constants */
@@ -84,7 +86,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         taskList = Collections.synchronizedList(new ArrayList<AsyncTask>());
 
         /* Set up distance plot */
-        chart = (LineChart) findViewById(R.id.distance_chart);
+        chart = (BarChart) findViewById(R.id.distance_chart);
         initDataSets();
         chart.setData(distanceData);
         chart.invalidate();
@@ -119,13 +121,13 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
      * Resets the distance and car counts datasets.
      */
     private void initDataSets() {
-        List<Entry> distanceEntries = new ArrayList<Entry>();
-        distanceEntries.add(new Entry(0, 0));
-        LineDataSet dataSet = new LineDataSet(distanceEntries, "Remote Device Data");
+        List<BarEntry> distanceEntries = new ArrayList<BarEntry>();
+        distanceEntries.add(new BarEntry(0, 0));
+        BarDataSet dataSet = new BarDataSet(distanceEntries, "Remote Device Data");
         dataSet.setValueTextColor(Color.WHITE);
         dataSet.setValueTextColor(Color.WHITE);
-        distanceData = new LineData(dataSet);
-        carCountData = new LineData(dataSet);
+        distanceData = new BarData(dataSet);
+        carCountData = new BarData(dataSet);
         chart.notifyDataSetChanged();
         chart.invalidate();
     }
@@ -604,13 +606,13 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             TextView distanceView = (TextView) findViewById(R.id.dist_reading_value);
             distanceView.setText(data[0] + " cm");
             float distanceReading = Float.parseFloat(data[0]);
-            distanceData.addEntry(new Entry(distanceData.getEntryCount(), distanceReading), 0);
 
             /* If the chart is getting full remove its first data point */
             if (distanceData.getEntryCount() >= 10) {
                 distanceData.removeEntry(distanceData.getXMin(), 0);
             }
 
+            distanceData.addEntry(new BarEntry(distanceData.getXMax()+1, distanceReading), 0);
             chart.notifyDataSetChanged();
             chart.invalidate();
         }
@@ -749,13 +751,12 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             int carCount = Integer.parseInt(data[0]);
             Log.d(BLUETOOTH, "Updating car count graph");
 
-            carCountData.addEntry(new Entry(carCountData.getEntryCount(), carCount), 0);
-
             /* If the chart is getting full remove its first data point */
             if (carCountData.getEntryCount() >= 10) {
                 carCountData.removeEntry(carCountData.getXMin(), 0);
             }
 
+            carCountData.addEntry(new BarEntry(carCountData.getXMax()+1, carCount), 0);
             chart.notifyDataSetChanged();
             chart.invalidate();
         }

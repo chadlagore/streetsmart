@@ -165,7 +165,7 @@
         android:layout_below="@id/gps_data_title"
         android:layout_above="@id/update_status_button">
 
-        <com.github.mikephil.charting.charts.LineChart
+        <com.github.mikephil.charting.charts.BarChart
             android:id="@+id/distance_chart"
             android:layout_width="0dp"
             android:layout_height="0dp"
