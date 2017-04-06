@@ -1,22 +1,35 @@
 package com.example.chadlagore.streetsmart;
 
+import android.content.Context;
+import android.content.ContextWrapper;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Environment;
 import android.provider.ContactsContract;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 
+import com.google.android.gms.maps.GoogleMap;
 import com.jjoe64.graphview.series.DataPoint;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.security.AccessController;
 import java.security.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -38,12 +51,18 @@ import okhttp3.Response;
 import android.provider.ContactsContract.CommonDataKinds.Email;
 
 import android.widget.TabHost;
+import android.widget.Toast;
+
+import static android.support.v4.content.FileProvider.getUriForFile;
+import static java.security.AccessController.getContext;
 
 public class HistoricalDataActivity extends AppCompatActivity {
 
     private final String TAG = "historical_data_activity";
     private TabHost tabHost = null;
     private final String csv_file = "street_smart_historical.csv";
+    private File cache_dir;
+    private Set<DataPoint> cached_result;
 
     /**
      * A class for requesting and storing historical data from the StreetSmart API.
@@ -371,15 +390,41 @@ public class HistoricalDataActivity extends AppCompatActivity {
     private void addDataPointsToChart(Set<DataPoint> result, double max_x, double max_y,
                                       double min_x, double min_y) {
         /* Add datapoints to chart, adjust axes etc. */
-        Log.i(TAG, result.toString());
+        this.cached_result = result;
+    }
+
+
+    /**
+     * Handles click of Export button in HistoricalDataActivity.
+     * Starts by writing the cached_result to disk as csv, then
+     * attempts to send an email (with the cached csv as an attachment).
+     * @param item
+     */
+    public boolean onOptionsItemSelected(MenuItem item) {
+        Log.d(TAG, "options clicked");
+
+        switch (item.getItemId()) {
+            case R.id.export_button:
+                if (export(new ArrayList<DataPoint>(this.cached_result))) {
+                    sendUserEmail("inversquare@gmail.com");
+                }
+
+                return true;
+
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     /**
      * Generates a CSV file from a List of DataPoints. Saves the file to disk.
      * We only use one CSV file on the device at a time to save the space.
      * @param data a List of DataPoints != null.
+     * @return false if could not save to file.
      */
-    private void generateCsv(List<DataPoint> data, Email email) {
+    private boolean export(List<DataPoint> data) {
 
         /* Sort data by timestamp. */
         Collections.sort(data, new Comparator<DataPoint>() {
@@ -392,6 +437,8 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
         /* Build up CSV. */
         StringBuilder sb = new StringBuilder();
+        sb.append("timestamp,datetime,cars\n");
+
         for (DataPoint d : data) {
 
             /* Convert timestamp. */
@@ -408,14 +455,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
             sb.append("\n");
         }
 
-        String result = sb.toString();
-
-        if (!writeToDisk(result)) {
-            Log.i(TAG, "Failed to write to disk.");
-        }
-        if (!sendUserEmail(email) {
-            Log.i(TAG, "Failed to send email to user.");
-        }
+        return writeCsvToDisk(sb.toString());
     }
 
     /**
@@ -423,8 +463,18 @@ public class HistoricalDataActivity extends AppCompatActivity {
      * @param result the string csv file.
      * @return false if fails.
      */
-    private boolean writeToDisk(String result) {
-        return false;
+    private boolean writeCsvToDisk(String result) {
+        FileOutputStream outputStream;
+
+        try {
+            outputStream = openFileOutput(this.csv_file, Context.MODE_PRIVATE);
+            outputStream.write(result.getBytes());
+            outputStream.close();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     /**
@@ -432,7 +482,38 @@ public class HistoricalDataActivity extends AppCompatActivity {
      * @param email a user Email.
      * @return false if fails.
      */
-    private boolean sendUserEmail(Email email) {
-        return false;
+    private boolean sendUserEmail(String email) {
+
+        /* Set up email intent. */
+        Intent emailIntent = new Intent(Intent.ACTION_SEND);
+        emailIntent.setType("text/plain");
+        emailIntent.putExtra(Intent.EXTRA_EMAIL, new String[] {email});
+        emailIntent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.hist_email_subject));
+        emailIntent.putExtra(Intent.EXTRA_TEXT, getString(R.string.hist_email_body));
+
+        /* Go collect cached file. */
+        String pathToCsv= getFilesDir().toString() + "/" + csv_file;
+        File file = new File(pathToCsv);
+
+        /* Fail if file does not exist. */
+        if (!file.exists()) {
+            return false;
+        } else if (!file.canRead()) {
+            return false;
+        }
+
+        /* Stream file into email intent. */
+        Uri contentUri = getUriForFile(this, "com.chadlagore.fileprovider", file);
+        emailIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+
+        /* Try to send the email. */
+        try {
+            startActivity(Intent.createChooser(emailIntent, "Send mail..."));
+            return true;
+        } catch (android.content.ActivityNotFoundException ex) {
+            Toast.makeText(this, "There are no email clients installed.",
+                    Toast.LENGTH_SHORT).show();
+            return false;
+        }
     }
 }
