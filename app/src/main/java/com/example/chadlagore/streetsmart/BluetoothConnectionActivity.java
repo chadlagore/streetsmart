@@ -146,18 +146,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
         Log.d(BLUETOOTH, "Adding task to tasklist.");
 
         /* Cancel currently running tasks */
-        for (AsyncTask currentTask : taskList) {
-            if (currentTask instanceof SendCalibrateCommandTask) {
-                ((SendCalibrateCommandTask) currentTask).cancel(true);
-            }
-            else if (currentTask instanceof GetDeviceStateTask) {
-                ((GetDeviceStateTask) currentTask).cancel(true);
-            }
-            else if (currentTask instanceof StreamCarCountTask) {
-                ((StreamCarCountTask) currentTask).cancel(true);
-            }
-            else ((StreamDistanceDataTask) currentTask).cancel(true);
-        }
+        cancelAllTasks();
 
         if (!taskList.isEmpty()) {
             return;
@@ -204,6 +193,24 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             chart.setData(distanceData);
             chart.notifyDataSetChanged();
             ((StreamDistanceDataTask) task).execute();
+        }
+    }
+
+    /**
+     * Cancel all running asynch tasks
+     */
+    private void cancelAllTasks() {
+        for (AsyncTask currentTask : taskList) {
+            if (currentTask instanceof SendCalibrateCommandTask) {
+                ((SendCalibrateCommandTask) currentTask).cancel(true);
+            }
+            else if (currentTask instanceof GetDeviceStateTask) {
+                ((GetDeviceStateTask) currentTask).cancel(true);
+            }
+            else if (currentTask instanceof StreamCarCountTask) {
+                ((StreamCarCountTask) currentTask).cancel(true);
+            }
+            else ((StreamDistanceDataTask) currentTask).cancel(true);
         }
     }
 
@@ -337,6 +344,7 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
      */
     @Override
     protected void onDestroy() {
+        cancelAllTasks();
         super.onDestroy();
 
         if (BTSocket != null) {
