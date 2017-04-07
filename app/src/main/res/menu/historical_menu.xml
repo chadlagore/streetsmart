@@ -4,42 +4,6 @@
     android:layout_width="match_parent">
 
     <item
-        android:title="hourly"
-        android:id="@+id/hourly_button"
-        android:onClick="onOptionsItemSelected"
-        app:showAsAction="withText|always"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
-    <item
-        android:title="daily"
-        android:id="@+id/daily_button"
-        app:showAsAction="withText|always"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
-    <item
-        android:title="weekly"
-        android:id="@+id/weekly_button"
-        app:showAsAction="withText|always"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
-    <item
-        android:title="monthly"
-        android:id="@+id/monthly_button"
-        app:showAsAction="withText|always"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
-    <item
-        android:title="yearly"
-        android:id="@+id/yearly_button"
-        app:showAsAction="withText|always"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
-    <item
         android:title="@string/hist_export"
         android:id="@+id/export_button"
         android:icon="@mipmap/normal"
