@@ -65,6 +65,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
     protected final String TAG = "historical_data_activity";
 
     /* Graph objects */
+    private ProgressBar mProgress;
     private boolean makingRequest = false;
     private String lastTabID;
     private static LineData hourlyData;
@@ -76,9 +77,8 @@ public class HistoricalDataActivity extends AppCompatActivity {
     private LineChart historicalChart;
     private final String csv_file = "street_smart_historical.csv";
     private File cache_dir;
-    private long intersection_id;
     private List<Entry> cachedResult;
-    private int intersectionID = 1;
+    private long intersectionID = 1;
 
     /* Tab objects */
     private TabHost tabHost = null;
@@ -135,7 +135,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
         /* Collect intersection id */
         Bundle extras = getIntent().getExtras();
-        intersection_id = Long.valueOf(extras.getString("intersection_id"));
+        intersectionID = Long.valueOf(extras.getString("intersection_id"));
 
         /* Set up historical data plot */
         historicalChart = (LineChart) findViewById(R.id.historical_chart);
@@ -154,10 +154,23 @@ public class HistoricalDataActivity extends AppCompatActivity {
         historicalChart.setData(currentDataset);
         historicalChart.notifyDataSetChanged();
         historicalChart.invalidate();
-    }
 
-    private ProgressBar mProgress;
-    private int mProgressStatus = 0;
+        /* Create an hourly chart of data from yesterday to today */
+        Log.d(TAG, "Setting up default graph");
+        Date today = new Date(System.currentTimeMillis());
+        Date yesterday = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
+        HistoricalRequest request = new HistoricalRequest(yesterday.getTime()/1000,
+                today.getTime()/1000, "hourly", intersectionID);
+
+        try {
+            makingRequest = true;
+            request.execute();
+        } catch (IOException e) {
+            makingRequest = false;
+            e.printStackTrace();
+            showIOErrorDialog();
+        }
+    }
 
 
     /**
@@ -436,7 +449,10 @@ public class HistoricalDataActivity extends AppCompatActivity {
             public void onTabChanged(String tabId) {
                 Log.d(TAG, "Menu item clicked: " + tabId.toString());
 
-                if (tabId == lastTabID || makingRequest) return;
+                if (tabId == lastTabID || makingRequest) {
+                    Log.d(TAG, "Ignoring tab click because we are still handling a request");
+                    return;
+                }
 
                 /* Handle the case where the user doesn't enter a start/end date */
                 if (startDate == null || endDate == null) {
@@ -478,21 +494,25 @@ public class HistoricalDataActivity extends AppCompatActivity {
                         makingRequest = true;
                         request.execute();
                     } catch (IOException e) {
+                        makingRequest = false;
                         e.printStackTrace();
-
-                        /* Build the dialogue with appropriate information */
-                        AlertDialog.Builder adb = new AlertDialog.Builder(getApplicationContext())
-                                .setTitle("Request Failed")
-                                .setMessage("Data not available at the moment, " +
-                                    "please try again later");
-
-                        AlertDialog ad = adb.show();
+                        showIOErrorDialog();
                     }
                 }
             }
         });
 
         return true;
+    }
+
+    private void showIOErrorDialog() {
+        /* Build the dialogue with appropriate information */
+        AlertDialog.Builder adb = new AlertDialog.Builder(getApplicationContext())
+                .setTitle("Request Failed")
+                .setMessage("Data not available at the moment, " +
+                        "please try again later");
+
+        adb.show();
     }
 
     /**
@@ -511,8 +531,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
                 .setTitle(date + "not selected.")
                 .setMessage("Please choose both start and end dates");
 
-        AlertDialog ad = adb.show();
-
+        adb.show();
     }
 
 
@@ -523,13 +542,17 @@ public class HistoricalDataActivity extends AppCompatActivity {
      */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.export_button:
+                /* Convert to list and try to send email. */
+                List<Entry> to_csv = new ArrayList<Entry>(this.cachedResult);
+                if (export(to_csv)) {
+                    sendUserEmail("example@gmail.com");
+                }
+                break;
 
-        if (item.getItemId() == R.id.export_button) {
-            /* Convert to list and try to send email. */
-            List<Entry> to_csv = new ArrayList<Entry>(this.cachedResult);
-            if (export(to_csv)) {
-                sendUserEmail("example@gmail.com" /* TODO: read in user email in GUI. */);
-            }
+            case android.R.id.home:
+                onBackPressed();
         }
 
         return true;
@@ -689,14 +712,18 @@ public class HistoricalDataActivity extends AppCompatActivity {
     private void addDataPointsToChart(List<Entry> result, double max_x, double max_y,
                                       double min_x, double min_y) {
         /* Add datapoints to chart */
-        LineDataSet newSet = new LineDataSet(result, "Historical Data");
-        currentDataset = new LineData(newSet);
-        historicalChart.setData(currentDataset);
-        historicalChart.notifyDataSetChanged();
-        historicalChart.invalidate();
+        if (result.size() > 0) {
+            Log.d(TAG, "Adding data to chart");
+            LineDataSet newSet = new LineDataSet(result, "Historical Data");
+            currentDataset = new LineData(newSet);
+            historicalChart.setData(currentDataset);
+            historicalChart.notifyDataSetChanged();
+            historicalChart.invalidate();
 
-        /* Add datapoints to chart, adjust axes etc. */
-        cachedResult = result;
+            /* Add datapoints to chart, adjust axes etc. */
+            cachedResult = result;
+        }
+
         makingRequest = false;
     }
 

@@ -299,7 +299,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Intent i = new Intent(this, HistoricalDataActivity.class);
         i.putExtra("intersection_id",
                 String.valueOf(mapFragment.trafficGraph.intersection_id));
-
         startActivity(i);
     }
 
