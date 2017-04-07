@@ -523,15 +523,9 @@ public class HistoricalDataActivity extends AppCompatActivity {
      */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getTitle() == "Export") {
-            /* Back out if running on emulator. */
-            if (Build.FINGERPRINT.startsWith("generic")) {
-                Toast.makeText(this, "Export feature not supported on emulator.",
-                        Toast.LENGTH_SHORT).show();
-                return true;
-            }
 
-                /* Convert to list and try to send email. */
+        if (item.getItemId() == R.id.export_button) {
+            /* Convert to list and try to send email. */
             List<Entry> to_csv = new ArrayList<Entry>(this.cachedResult);
             if (export(to_csv)) {
                 sendUserEmail("example@gmail.com" /* TODO: read in user email in GUI. */);
@@ -695,8 +689,6 @@ public class HistoricalDataActivity extends AppCompatActivity {
     private void addDataPointsToChart(List<Entry> result, double max_x, double max_y,
                                       double min_x, double min_y) {
         /* Add datapoints to chart */
-        Log.i(TAG, "Adding data to chart: " + result.toString());
-
         LineDataSet newSet = new LineDataSet(result, "Historical Data");
         currentDataset = new LineData(newSet);
         historicalChart.setData(currentDataset);
