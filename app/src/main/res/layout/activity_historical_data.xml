@@ -65,7 +65,7 @@
             android:gravity="center"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:background="@color/colorPrimary"
+            android:background="#85e0e0"
             android:textColor="@color/colorPrimaryDark"
             tools:layout_editor_absoluteX="0dp"
             tools:layout_editor_absoluteY="2dp"/>
@@ -79,7 +79,7 @@
             android:paddingRight="8dp"
             android:text="End Date"
             android:gravity="center"
-            android:background="@color/colorPrimary"
+            android:background="#85e0e0"
             android:textColor="@color/colorPrimaryDark"
             android:textSize="18sp"
             android:textStyle="bold"/>
