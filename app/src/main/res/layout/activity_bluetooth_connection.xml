@@ -102,31 +102,12 @@
         android:textSize="20dp" />
 
     <TextView
-        android:id="@+id/wifi_status_title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Wifi Connection Status"
-        android:layout_alignLeft="@id/update_status_button"
-        android:layout_below="@id/dist_reading_title"
-        android:layout_marginTop="10dp"
-        android:textSize="20dp"/>
-
-    <TextView
-        android:id="@+id/wifi_status_value"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignRight="@id/update_status_button"
-        android:layout_alignBaseline="@id/wifi_status_title"
-        android:text="NONE"
-        android:textSize="20dp"/>
-
-    <TextView
         android:id="@+id/calibration_dist_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Calibration Distance"
         android:layout_alignLeft="@id/update_status_button"
-        android:layout_below="@id/wifi_status_title"
+        android:layout_below="@id/dist_reading_value"
         android:layout_marginTop="10dp"
         android:textSize="20dp"/>
 

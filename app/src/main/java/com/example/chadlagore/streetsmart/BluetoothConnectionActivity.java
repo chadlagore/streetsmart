@@ -159,6 +159,10 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
             else ((StreamDistanceDataTask) currentTask).cancel(true);
         }
 
+        if (!taskList.isEmpty()) {
+            return;
+        }
+
         if (streaming) {
             if (!(task instanceof StreamDistanceDataTask)) {
                 /* We were streaming and the user started another task. Cancel stream! */
@@ -695,18 +699,15 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
                 /* Update UI with data we received */
                 String distance = values[0].replace("S", "");
-                String wifiStatus = values[1];
                 String calibrationDist = values[2];
                 String latitude = values[3];
                 String longitude = "-" + values[4]; /* The longitude comes in with the wrong sign */
 
                 TextView distView = (TextView) findViewById(R.id.dist_reading_value);
-                TextView wifiView = (TextView) findViewById(R.id.wifi_status_value);
                 TextView calDistView = (TextView) findViewById(R.id.calibration_dist_value);
                 TextView GPSView = (TextView) findViewById(R.id.gps_data_value);
 
                 distView.setText(distance + " cm");
-                wifiView.setText(wifiStatus);
                 calDistView.setText(calibrationDist + " cm");
                 GPSView.setText(latitude + ", " + longitude);
 

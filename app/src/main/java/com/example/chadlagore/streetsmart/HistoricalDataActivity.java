@@ -257,7 +257,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
                 startDate = new Date(System.currentTimeMillis());
                 endDate = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
             }
-            
+
             SimpleDateFormat sd = new SimpleDateFormat("EEE, MMM d yyyy");
             String start = sd.format(startDate);
             String end = sd.format(endDate);
@@ -851,7 +851,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
             @Override
             public String getFormattedValue(float xValue, AxisBase axisBase) {
                 Date itemDate = new Date((long)xValue*1000);
-                SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy");
+                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
                 format.setTimeZone(TimeZone.getTimeZone("UTC"));
                 return format.format(itemDate);
             }
