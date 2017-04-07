@@ -16,11 +16,10 @@
         android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
         app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:layout_marginLeft="0dp"
+        android:layout_marginLeft="2dp"
         android:layout_marginStart="2dp"
         android:layout_marginEnd="2dp"
         app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginTop="0dp"
         android:layout_marginRight="2dp"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintHorizontal_bias="0.0" />
@@ -29,14 +28,14 @@
         android:id="@+id/progress_bar"
         android:layout_width="901dp"
         android:layout_height="4dp"
-        style="@android:style/Widget.ProgressBar.Horizontal"
         android:layout_marginRight="0dp"
-        app:layout_constraintRight_toRightOf="parent"
         android:layout_marginLeft="0dp"
+        android:layout_marginTop="0dp"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/historical_toolbar"
-        android:layout_marginTop="0dp"
-        app:layout_constraintHorizontal_bias="0" />
+        app:layout_constraintHorizontal_bias="0.0" />
 
     <LinearLayout
         android:id="@+id/start_date_layout_id"
@@ -85,6 +84,18 @@
             android:textSize="18sp"
             android:textStyle="bold"/>
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/historical_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Historical Data for Intersection"
+        android:textSize="30dp"
+        android:gravity="center"
+        android:layout_marginTop="10dp"
+        app:layout_constraintTop_toBottomOf="@+id/start_date_layout_id"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"/>
 
     <TabHost
         android:id="@+id/tabHost"
