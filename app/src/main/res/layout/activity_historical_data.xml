@@ -121,15 +121,6 @@
                     android:layout_height="match_parent"
                     android:orientation="vertical">
 
-                    <com.jjoe64.graphview.GraphView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:layout_marginRight="5dp"
-                        android:layout_marginLeft="5dp"
-                        android:id="@+id/daily_graph"
-                        android:gravity="center"
-                        android:visibility="invisible"/>
-
                 </LinearLayout>
 
                 <LinearLayout
@@ -137,15 +128,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:orientation="vertical">
-
-                    <com.jjoe64.graphview.GraphView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:layout_marginRight="5dp"
-                        android:layout_marginLeft="5dp"
-                        android:id="@+id/hourly_graph"
-                        android:visibility="invisible"
-                        android:gravity="center" />
 
                 </LinearLayout>
 
@@ -155,15 +137,6 @@
                     android:layout_height="match_parent"
                     android:orientation="vertical">
 
-                    <com.jjoe64.graphview.GraphView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:layout_marginRight="5dp"
-                        android:layout_marginLeft="5dp"
-                        android:visibility="invisible"
-                        android:id="@+id/weekly_graph"
-                        android:gravity="center" />
-
                 </LinearLayout>
 
                 <LinearLayout
@@ -172,15 +145,6 @@
                     android:layout_height="match_parent"
                     android:orientation="vertical">
 
-                    <com.jjoe64.graphview.GraphView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:layout_marginRight="5dp"
-                        android:layout_marginLeft="5dp"
-                        android:visibility="invisible"
-                        android:id="@+id/monthly_graph"
-                        android:gravity="center" />
-
                 </LinearLayout>
 
                 <LinearLayout
@@ -188,15 +152,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:orientation="vertical">
-
-                    <com.jjoe64.graphview.GraphView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:layout_marginRight="5dp"
-                        android:layout_marginLeft="5dp"
-                        android:visibility="invisible"
-                        android:id="@+id/yearly_graph"
-                        android:gravity="center" />
 
                 </LinearLayout>
 
