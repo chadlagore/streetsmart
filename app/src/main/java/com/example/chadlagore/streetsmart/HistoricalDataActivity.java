@@ -143,68 +143,8 @@ public class HistoricalDataActivity extends AppCompatActivity {
         TextView view = (TextView) findViewById(R.id.historical_title);
         view.setText("Historical Data: " + extras.getString("intersection_name"));
 
-        /* Set up historical data plot */
-        historicalChart = (LineChart) findViewById(R.id.historical_chart);
-
-        List<Entry> dummyEntries = new ArrayList<Entry>();
-        dummyEntries.add(new Entry(0, 0));
-        LineDataSet dataSet = new LineDataSet(dummyEntries, "Historical Data");
-        dataSet.setValueTextColor(Color.WHITE);
-        hourlyData = new LineData(dataSet);
-        dailyData = new LineData(dataSet);
-        weeklyData = new LineData(dataSet);
-        monthlyData = new LineData(dataSet);
-        yearlyData = new LineData(dataSet);
-        hourlyData = new LineData(dataSet);
-        currentDataset = hourlyData;
-
-        /* Set value date formatter for graph x-Axis */
-        xAxisDateFormatter = new IAxisValueFormatter() {
-            @Override
-            public String getFormattedValue(float value, AxisBase axisBase) {
-                Date itemDate = new Date((long)value);
-                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-                format.setTimeZone(TimeZone.getTimeZone("UTC"));
-                return format.format(itemDate);
-            }
-        };
-
-        /* Set value date formatter for graph x-Axis */
-        xAxisTimeFormatter = new IAxisValueFormatter() {
-            @Override
-            public String getFormattedValue(float value, AxisBase axisBase) {
-                Date itemDate = new Date((long)value);
-                SimpleDateFormat format = new SimpleDateFormat("HH:mm a");
-                format.setTimeZone(TimeZone.getTimeZone("UTC"));
-                return format.format(itemDate);
-            }
-        };
-
-        /* Set xAxis formatter and style */
-        chartXAxis = historicalChart.getXAxis();
-        chartXAxis.setTextColor(Color.WHITE);
-        chartXAxis.setValueFormatter(xAxisTimeFormatter);
-
-        /* Add dataset to chart */
-        historicalChart.setData(currentDataset);
-        historicalChart.notifyDataSetChanged();
-        historicalChart.invalidate();
-
-        /* Create an hourly chart of data from yesterday to today */
-        Log.d(TAG, "Setting up default graph");
-        Date today = new Date(System.currentTimeMillis());
-        Date yesterday = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
-        HistoricalRequest request = new HistoricalRequest(yesterday.getTime()/1000,
-                today.getTime()/1000, "hourly", intersectionID);
-
-        try {
-            makingRequest = true;
-            request.execute();
-        } catch (IOException e) {
-            makingRequest = false;
-            e.printStackTrace();
-            showIOErrorDialog();
-        }
+        /* Set up the chart and display the default data */
+        initChart();
     }
 
 
@@ -865,6 +805,75 @@ public class HistoricalDataActivity extends AppCompatActivity {
             Toast.makeText(this, "There are no email clients installed.",
                     Toast.LENGTH_SHORT).show();
             return false;
+        }
+    }
+
+    /**
+     * Creates a historical chart and adds a dataset for each granularity to the chart, then
+     * fills the chart with default data by executing a HistoricalRequest.
+     */
+    private void initChart() {
+        /* Set up historical data plot */
+        historicalChart = (LineChart) findViewById(R.id.historical_chart);
+
+        List<Entry> dummyEntries = new ArrayList<Entry>();
+        dummyEntries.add(new Entry(0, 0));
+        LineDataSet dataSet = new LineDataSet(dummyEntries, "Historical Data");
+        dataSet.setValueTextColor(Color.WHITE);
+        hourlyData = new LineData(dataSet);
+        dailyData = new LineData(dataSet);
+        weeklyData = new LineData(dataSet);
+        monthlyData = new LineData(dataSet);
+        yearlyData = new LineData(dataSet);
+        hourlyData = new LineData(dataSet);
+        currentDataset = hourlyData;
+
+        /* Set value date formatter for graph x-Axis */
+        xAxisDateFormatter = new IAxisValueFormatter() {
+            @Override
+            public String getFormattedValue(float xValue, AxisBase axisBase) {
+                Date itemDate = new Date((long)xValue*1000);
+                SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy");
+                format.setTimeZone(TimeZone.getTimeZone("UTC"));
+                return format.format(itemDate);
+            }
+        };
+
+        /* Set value date formatter for graph x-Axis */
+        xAxisTimeFormatter = new IAxisValueFormatter() {
+            @Override
+            public String getFormattedValue(float xValue, AxisBase axisBase) {
+                Date itemDate = new Date((long)xValue*1000);
+                SimpleDateFormat format = new SimpleDateFormat("HH:mm a");
+                format.setTimeZone(TimeZone.getTimeZone("UTC"));
+                return format.format(itemDate);
+            }
+        };
+
+        /* Set xAxis formatter and style */
+        chartXAxis = historicalChart.getXAxis();
+        chartXAxis.setTextColor(Color.WHITE);
+        chartXAxis.setValueFormatter(xAxisTimeFormatter);
+
+        /* Add dataset to chart and set chart style */
+        historicalChart.setData(currentDataset);
+        historicalChart.notifyDataSetChanged();
+        historicalChart.invalidate();
+
+        /* Create an hourly chart of data from yesterday to today */
+        Log.d(TAG, "Setting up default graph");
+        Date today = new Date(System.currentTimeMillis());
+        Date yesterday = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
+        HistoricalRequest request = new HistoricalRequest(yesterday.getTime()/1000,
+                today.getTime()/1000, "hourly", intersectionID);
+
+        try {
+            makingRequest = true;
+            request.execute();
+        } catch (IOException e) {
+            makingRequest = false;
+            e.printStackTrace();
+            showIOErrorDialog();
         }
     }
 }
