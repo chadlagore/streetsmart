@@ -3,6 +3,7 @@ package com.example.chadlagore.streetsmart;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.content.Context;
@@ -11,6 +12,7 @@ import android.net.Uri;
 import android.os.Build;
 
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -83,8 +85,8 @@ public class HistoricalDataActivity extends AppCompatActivity {
     private TabHost.TabSpec yearlyTab;
 
     /* Start and end dates */
-    protected Date endDate;
-    protected Date startDate;
+    protected Date endDate = null;
+    protected Date startDate = null;
 
 
     /**
@@ -429,6 +431,12 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
                 if (tabId == lastTabID) return;
 
+                /* Handle the case where the user doesn't enter a start/end date */
+                if (startDate == null || endDate == null) {
+                    printNullDateMessage();
+                    return;
+                }
+
                 String granularity = null;
 
                 /* For each tab, we'll need to retreive different
@@ -467,6 +475,26 @@ public class HistoricalDataActivity extends AppCompatActivity {
         });
 
         return true;
+    }
+
+    /**
+     * Method simply displays a dialogue when the user pushes one
+     * of the tabs on the historical data activity. There are no options
+     * other than to exit the dialogue.
+     */
+    private void printNullDateMessage() {
+        Log.i(this.TAG, "The user pressed a tab without specifying start or end dates");
+
+        /* Figure out which date (start or end) is null */
+        String date = (startDate == null) ? "Start date " : "End date ";
+
+        /* Build the dialogue with appropriate information */
+        AlertDialog.Builder adb = new AlertDialog.Builder(this)
+                .setTitle(date + "not selected.")
+                .setMessage("Please choose both start and end dates");
+
+        AlertDialog ad = adb.show();
+
     }
 
 
