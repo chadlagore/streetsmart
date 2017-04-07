@@ -300,7 +300,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
         /* TODO: delete this mock request. */
         HistoricalRequest request = new HistoricalRequest(
-                1490800000, 1490831240, "hourly", 250);
+                1400000000, 1490831240, "hourly", 250);
         request.execute();
 
     }
