@@ -141,6 +141,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
         TextView view = (TextView) findViewById(R.id.historical_title);
         view.setText("Historical Data: " + extras.getString("intersection_name"));
 
+
         /* Set up historical data plot */
         historicalChart = (LineChart) findViewById(R.id.historical_chart);
 
@@ -163,6 +164,8 @@ public class HistoricalDataActivity extends AppCompatActivity {
         Log.d(TAG, "Setting up default graph");
         Date today = new Date(System.currentTimeMillis());
         Date yesterday = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
+        startDate = today;
+        endDate = yesterday;
         HistoricalRequest request = new HistoricalRequest(yesterday.getTime()/1000,
                 today.getTime()/1000, "hourly", intersectionID);
 
@@ -280,6 +283,16 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
         }
 
+        public void updateGraphTitle(Date startDate, Date endDate){
+            SimpleDateFormat sd = new SimpleDateFormat("dd/M/yyyy");
+            String start = sd.format(startDate);
+            SimpleDateFormat ed = new SimpleDateFormat("dd/M/yyyy");
+            String end = ed.format(endDate);
+            String filter = granularity.substring(0, 1).toUpperCase() + granularity.substring(1);
+            TextView view = (TextView) findViewById(R.id.hist_graph_title);
+            view.setText(filter + " car count from " + start + " to " + end);
+        }
+
         /**
          * AsyncTask to add new DataPoints from API into DataPoint Set.
          * Updates progress in terms of the number of data points it has yet to update.
@@ -381,6 +394,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
             @Override
             protected void onPostExecute(List<Entry> result) {
                 addDataPointsToChart(result, max_x, max_y, min_x, min_y);
+                updateGraphTitle(startDate, endDate);
                 setProgressPercent(0);
             }
 
