@@ -63,9 +63,6 @@ public class HistoricalDataActivity extends AppCompatActivity {
      * A class for requesting and storing historical data from the StreetSmart API.
      * Requests execute asyncronously, but can update the historical graph by calling
      * addDataPointsToChart from onPostExecute.
-     *
-     * Representation invariant:
-     *      start_date <= end_date; granularity in {daily, hourly, weekly, monthly, yearly}
      */
     public class HistoricalRequest {
 
@@ -100,7 +97,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
          * Generates a callback to catch the response. If the response was a success, queues
          * an asynchronous task to update the DataPoints in the plot.
          */
-        public void execute() {
+        public void execute() throws IOException {
             HttpUrl.Builder builder= new HttpUrl.Builder()
                     .scheme("http")
                     .host(base_url)
@@ -301,7 +298,12 @@ public class HistoricalDataActivity extends AppCompatActivity {
         /* TODO: delete this mock request. */
         HistoricalRequest request = new HistoricalRequest(
                 1400000000, 1490831240, "hourly", 250);
-        request.execute();
+
+        try {
+            request.execute();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 
