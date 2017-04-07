@@ -3,13 +3,11 @@ package com.example.chadlagore.streetsmart;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
-import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Build;
 
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
@@ -23,18 +21,20 @@ import android.view.MenuItem;
 import android.view.View;
 
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.AxisBase;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.formatter.IAxisValueFormatter;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.w3c.dom.Text;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.text.SimpleDateFormat;
@@ -43,7 +43,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
-import java.util.SimpleTimeZone;
+import java.util.TimeZone;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -60,13 +60,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import static android.support.v4.content.FileProvider.getUriForFile;
-import static okhttp3.internal.http.HttpDate.format;
 
 public class HistoricalDataActivity extends AppCompatActivity {
 
     protected final String TAG = "historical_data_activity";
 
     /* Graph objects */
+    private IAxisValueFormatter xAxisDateFormatter;
+    private IAxisValueFormatter xAxisTimeFormatter;
+    private XAxis chartXAxis;
     private ProgressBar mProgress;
     private boolean makingRequest = false;
     private String lastTabID;
@@ -141,39 +143,8 @@ public class HistoricalDataActivity extends AppCompatActivity {
         TextView view = (TextView) findViewById(R.id.historical_title);
         view.setText("Historical Data: " + extras.getString("intersection_name"));
 
-        /* Set up historical data plot */
-        historicalChart = (LineChart) findViewById(R.id.historical_chart);
-
-        List<Entry> dummyEntries = new ArrayList<Entry>();
-        dummyEntries.add(new Entry(0, 0));
-        LineDataSet dataSet = new LineDataSet(dummyEntries, "Historical Data");
-        dataSet.setValueTextColor(Color.WHITE);
-        hourlyData = new LineData(dataSet);
-        dailyData = new LineData(dataSet);
-        weeklyData = new LineData(dataSet);
-        monthlyData = new LineData(dataSet);
-        yearlyData = new LineData(dataSet);
-        hourlyData = new LineData(dataSet);
-        currentDataset = hourlyData;
-        historicalChart.setData(currentDataset);
-        historicalChart.notifyDataSetChanged();
-        historicalChart.invalidate();
-
-        /* Create an hourly chart of data from yesterday to today */
-        Log.d(TAG, "Setting up default graph");
-        Date today = new Date(System.currentTimeMillis());
-        Date yesterday = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
-        HistoricalRequest request = new HistoricalRequest(yesterday.getTime()/1000,
-                today.getTime()/1000, "hourly", intersectionID);
-
-        try {
-            makingRequest = true;
-            request.execute();
-        } catch (IOException e) {
-            makingRequest = false;
-            e.printStackTrace();
-            showIOErrorDialog();
-        }
+        /* Set up the chart and display the default data */
+        initChart();
     }
 
 
@@ -406,7 +377,9 @@ public class HistoricalDataActivity extends AppCompatActivity {
         }
     }
 
-    // Menu icons are inflated just as they were with actionbar
+    /**
+     * Menu icons are inflated just as they were with actionbar
+     */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         Log.d(TAG, "Inflating toolbar");
@@ -471,18 +444,23 @@ public class HistoricalDataActivity extends AppCompatActivity {
                  * information from the server. Handle each case separately
                  */
                 if (hourlyTab.getTag().equals(tabId)) {
+                    chartXAxis.setValueFormatter(xAxisTimeFormatter);
                     currentDataset = hourlyData;
                     granularity = "hourly";
                 } else if (dailyTab.getTag().equals(tabId)) {
+                    chartXAxis.setValueFormatter(xAxisDateFormatter);
                     currentDataset = dailyData;
                     granularity = "daily";
                 } else if (weeklyTab.getTag().equals(tabId)) {
+                    chartXAxis.setValueFormatter(xAxisDateFormatter);
                     currentDataset = weeklyData;
                     granularity = "weekly";
                 } else if (monthlyTab.getTag().equals(tabId)) {
+                    chartXAxis.setValueFormatter(xAxisDateFormatter);
                     currentDataset = monthlyData;
                     granularity = "monthly";
                 } else if (yearlyTab.getTag().equals(tabId)) {
+                    chartXAxis.setValueFormatter(xAxisDateFormatter);
                     currentDataset = yearlyData;
                     granularity = "yearly";
                 }
@@ -720,6 +698,8 @@ public class HistoricalDataActivity extends AppCompatActivity {
             Log.d(TAG, "Adding data to chart");
             LineDataSet newSet = new LineDataSet(result, "Historical Data");
             currentDataset = new LineData(newSet);
+            currentDataset.setValueTextColor(Color.WHITE);
+
             historicalChart.setData(currentDataset);
             historicalChart.notifyDataSetChanged();
             historicalChart.invalidate();
@@ -827,6 +807,79 @@ public class HistoricalDataActivity extends AppCompatActivity {
             Toast.makeText(this, "There are no email clients installed.",
                     Toast.LENGTH_SHORT).show();
             return false;
+        }
+    }
+
+    /**
+     * Creates a historical chart and adds a dataset for each granularity to the chart, then
+     * fills the chart with default data by executing a HistoricalRequest.
+     */
+    private void initChart() {
+        /* Set up historical data plot */
+        historicalChart = (LineChart) findViewById(R.id.historical_chart);
+
+        List<Entry> dummyEntries = new ArrayList<Entry>();
+        dummyEntries.add(new Entry(0, 0));
+        LineDataSet dataSet = new LineDataSet(dummyEntries, "Historical Data");
+        dataSet.setColor(Color.WHITE);
+        hourlyData = new LineData(dataSet);
+        dailyData = new LineData(dataSet);
+        weeklyData = new LineData(dataSet);
+        monthlyData = new LineData(dataSet);
+        yearlyData = new LineData(dataSet);
+        hourlyData = new LineData(dataSet);
+        currentDataset = hourlyData;
+
+        /* Set value date formatter for graph x-Axis */
+        xAxisDateFormatter = new IAxisValueFormatter() {
+            @Override
+            public String getFormattedValue(float xValue, AxisBase axisBase) {
+                Date itemDate = new Date((long)xValue*1000);
+                SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy");
+                format.setTimeZone(TimeZone.getTimeZone("UTC"));
+                return format.format(itemDate);
+            }
+        };
+
+        /* Set value date formatter for graph x-Axis */
+        xAxisTimeFormatter = new IAxisValueFormatter() {
+            @Override
+            public String getFormattedValue(float xValue, AxisBase axisBase) {
+                Date itemDate = new Date((long)xValue*1000);
+                SimpleDateFormat format = new SimpleDateFormat("HH:mm a");
+                format.setTimeZone(TimeZone.getTimeZone("UTC"));
+                return format.format(itemDate);
+            }
+        };
+
+        /* Set xAxis formatter and style */
+        chartXAxis = historicalChart.getXAxis();
+        chartXAxis.setTextColor(Color.WHITE);
+        chartXAxis.setValueFormatter(xAxisTimeFormatter);
+
+        /* Format chart YAxis colors to white */
+        historicalChart.getAxisLeft().setTextColor(Color.WHITE);
+        historicalChart.getAxisRight().setTextColor(Color.WHITE);
+
+        /* Add dataset to chart and set chart style */
+        historicalChart.setData(currentDataset);
+        historicalChart.notifyDataSetChanged();
+        historicalChart.invalidate();
+
+        /* Create an hourly chart of data from yesterday to today */
+        Log.d(TAG, "Setting up default graph");
+        Date today = new Date(System.currentTimeMillis());
+        Date yesterday = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
+        HistoricalRequest request = new HistoricalRequest(yesterday.getTime()/1000,
+                today.getTime()/1000, "hourly", intersectionID);
+
+        try {
+            makingRequest = true;
+            request.execute();
+        } catch (IOException e) {
+            makingRequest = false;
+            e.printStackTrace();
+            showIOErrorDialog();
         }
     }
 }
