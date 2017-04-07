@@ -207,7 +207,6 @@ public class TrafficGraph extends DialogFragment {
 
         /* There is no current intersection if the dialog fragment is not open */
         MainActivity activity = (MainActivity) getActivity();
-        activity.setCurrentIntersection(null);
     }
 
     @Override

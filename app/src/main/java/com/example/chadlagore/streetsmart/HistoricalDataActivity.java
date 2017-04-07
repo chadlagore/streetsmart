@@ -258,9 +258,9 @@ public class HistoricalDataActivity extends AppCompatActivity {
                 endDate = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
             }
             
-            SimpleDateFormat sd = new SimpleDateFormat("dd/M/yyyy");
+            SimpleDateFormat sd = new SimpleDateFormat("yyyy/MM/dd");
             String start = sd.format(startDate);
-            SimpleDateFormat ed = new SimpleDateFormat("dd/M/yyyy");
+            SimpleDateFormat ed = new SimpleDateFormat("yyyy/MM/dd");
             String end = ed.format(endDate);
             String filter = granularity.substring(0, 1).toUpperCase() + granularity.substring(1);
             TextView view = (TextView) findViewById(R.id.hist_graph_title);
@@ -852,7 +852,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
             @Override
             public String getFormattedValue(float xValue, AxisBase axisBase) {
                 Date itemDate = new Date((long)xValue*1000);
-                SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy");
+                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
                 format.setTimeZone(TimeZone.getTimeZone("UTC"));
                 return format.format(itemDate);
             }
