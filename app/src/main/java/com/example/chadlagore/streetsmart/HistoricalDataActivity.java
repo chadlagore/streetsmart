@@ -9,12 +9,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
+
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.LayoutInflater;
+
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -31,9 +32,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.DateFormat;
-import java.text.FieldPosition;
-import java.text.ParseException;
-import java.text.ParsePosition;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.text.SimpleDateFormat;
@@ -51,6 +49,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import android.widget.ProgressBar;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.TabHost;
@@ -75,6 +74,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
     private LineChart historicalChart;
     private final String csv_file = "street_smart_historical.csv";
     private File cache_dir;
+    private long intersection_id;
     private List<Entry> cachedResult;
     private int intersectionID = 1;
 
@@ -87,7 +87,6 @@ public class HistoricalDataActivity extends AppCompatActivity {
     private TabHost.TabSpec yearlyTab;
 
     /* Start and end dates */
-    private static DateFormat dateFormat;
     protected Date endDate;
     protected Date startDate;
 
@@ -101,7 +100,8 @@ public class HistoricalDataActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_historical_data);
 
-//        intersectionID = getIntent().getParcelableExtra("intersectionID");
+        /* Collect progress bar. */
+        mProgress = (ProgressBar) findViewById(R.id.progress_bar);
 
         /* Generate toolbar at top of activity. */
         Toolbar appToolbar = (Toolbar) findViewById(R.id.historical_toolbar);
@@ -131,6 +131,10 @@ public class HistoricalDataActivity extends AppCompatActivity {
             }
         });
 
+        /* Collect intersection id */
+        Bundle extras = getIntent().getExtras();
+        intersection_id = Long.valueOf(extras.getString("intersection_id"));
+
         /* Set up historical data plot */
         historicalChart = (LineChart) findViewById(R.id.historical_chart);
 
@@ -148,10 +152,11 @@ public class HistoricalDataActivity extends AppCompatActivity {
         historicalChart.setData(currentDataset);
         historicalChart.notifyDataSetChanged();
         historicalChart.invalidate();
-
-        dateFormat = new SimpleDateFormat();
-        dateFormat.setTimeZone(new SimpleTimeZone(SimpleTimeZone.UTC_TIME, "UTC"));
     }
+
+    private ProgressBar mProgress;
+    private int mProgressStatus = 0;
+
 
     /**
      * A class for requesting and storing historical data from the StreetSmart API.
@@ -162,9 +167,10 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
         private final String base_url = "tranquil-shore-92989.herokuapp.com";
         private final String TAG = "historical_request";
-        private int start_date;
-        private int end_date;
+        private long start_date;
+        private long end_date;
         private long id;
+        private int init_progress = 10;
         private String granularity;
         public JSONObject meta, data;
         OkHttpClient client;
@@ -177,12 +183,15 @@ public class HistoricalDataActivity extends AppCompatActivity {
          * @param granularity either "hourly", "daily", "weekly", "monthly", or "yearly"
          * @param id the intersection id
          */
-        public HistoricalRequest(int start_date, int end_date, String granularity, long id) {
-            this.start_date = start_date;
-            this.end_date = end_date;
+        public HistoricalRequest(long start_date, long end_date, String granularity, long id) {
+            this.start_date = start_date/1000;
+            this.end_date = end_date/1000;
             this.granularity = granularity;
             this.id = id;
             this.client = new OkHttpClient();
+
+            Log.d(TAG, "Start date: " + String.valueOf(this.start_date));
+            Log.d(TAG, "End date: " + String.valueOf(this.end_date));
         }
 
         /**
@@ -190,7 +199,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
          * Generates a callback to catch the response. If the response was a success, queues
          * an asynchronous task to update the DataPoints in the plot.
          */
-        public void execute() {
+        public void execute() throws IOException {
             HttpUrl.Builder builder= new HttpUrl.Builder()
                     .scheme("http")
                     .host(base_url)
@@ -208,6 +217,9 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
             /* Build a new request. */
             Request request = new Request.Builder().url(url).build();
+
+            /* Initialize progress bar. */
+            mProgress.setProgress(init_progress);
 
             /**
              * Enqueue the request and handle responses asynchronously.
@@ -276,27 +288,37 @@ public class HistoricalDataActivity extends AppCompatActivity {
                 JSONObject data = jsonObjs[0];
                 Iterator keys = data.keys();
 
-                int i = 0; /* Publish progress too. */
-                while (keys.hasNext()) {
-                    String key = (String) keys.next();
+                /* Publish progress with linear increase. */
+                double slope = 0;
+                int i = 0;
 
-                    /* Try to collect each datapoint from the JSON. */
-                    try {
-                        double x = Double.valueOf(key);
-                        double y = Double.valueOf((Double) data.get(key));
-                        results.add(new Entry((float)x, (float)y));
-                        updateMax(x, y);
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
+                try {
+                    slope = (100 - init_progress) / meta.getDouble("results");
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    this.cancel(true);
+                }
 
-                    /* Update progress by counting number of keys. */
-                    try {
-                        publishProgress((int) ((i / (float) meta.getDouble("results")) * 100));
-                    } catch (JSONException e) {
-                        e.printStackTrace();
+                if (!isCancelled()) {
+                    while (keys.hasNext()) {
+                        String key = (String) keys.next();
+
+                        /* Try to collect each datapoint from the JSON. */
+                        try {
+                            double x = Double.valueOf(key);
+                            double y = Double.valueOf((Double) data.get(key));
+                            results.add(new Entry((float)x, (float)y));
+                            updateMax(x, y);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+                        /* Update progress by counting number of keys. */
+                        int progress = (int) (slope * i + init_progress);
+                        publishProgress(progress);
+
+                        i++;
                     }
-                    i++;
                 }
 
                 /* Sort data by timestamp. */
@@ -340,6 +362,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
             @Override
             protected void onPostExecute(List<Entry> result) {
                 addDataPointsToChart(result, max_x, max_y, min_x, min_y);
+                setProgressPercent(0);
             }
 
             /**
@@ -363,7 +386,6 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
         }
     }
-
 
     // Menu icons are inflated just as they were with actionbar
     @Override
@@ -442,10 +464,14 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
                 if (granularity != null) {
                     HistoricalRequest request =
-                            new HistoricalRequest((int)startDate.getTime(), (int)endDate.getTime(),
+                            new HistoricalRequest(startDate.getTime(), endDate.getTime(),
                                     granularity, intersectionID);
-                    makingRequest = true;
-                    request.execute();
+                    try {
+                        makingRequest = true;
+                        request.execute();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         });
@@ -538,25 +564,14 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
             /* Handle the end date */
             if (this.id.equals(this.END_DAY)) {
-                try {
-                    String date = dateFormat.format(getDateFromDatePicker(dp));
-                    this.hda.endDate = dateFormat.parse(date);
-                    Log.d(this.hda.TAG, "setting end date to " + this.hda.toString());
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
+                this.hda.endDate = getDateFromDatePicker(dp);
+                Log.d(this.hda.TAG, "setting end date to " + this.hda.endDate);
             }
 
             /* Handle the start date */
             if (this.id.equals(this.START_DAY)) {
-                Log.d(this.hda.TAG, "User selected start day");
-                try {
-                    String date = dateFormat.format(getDateFromDatePicker(dp));
-                    this.hda.startDate = dateFormat.parse(date);
-                    Log.d(this.hda.TAG, "setting start date to " + this.hda.toString());
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
+                this.hda.startDate = getDateFromDatePicker(dp);
+                Log.d(this.hda.TAG, "setting start date to " + this.hda.startDate);
             }
         }
 
@@ -630,7 +645,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
      * @param progressPercent
      */
     public void setProgressPercent(Integer progressPercent) {
-        /* Update progress bar. */
+        mProgress.setProgress(progressPercent);
     }
 
     /**
