@@ -258,10 +258,9 @@ public class HistoricalDataActivity extends AppCompatActivity {
                 endDate = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
             }
             
-            SimpleDateFormat sd = new SimpleDateFormat("dd/M/yyyy");
+            SimpleDateFormat sd = new SimpleDateFormat("EEE, MMM d yyyy");
             String start = sd.format(startDate);
-            SimpleDateFormat ed = new SimpleDateFormat("dd/M/yyyy");
-            String end = ed.format(endDate);
+            String end = sd.format(endDate);
             String filter = granularity.substring(0, 1).toUpperCase() + granularity.substring(1);
             TextView view = (TextView) findViewById(R.id.hist_graph_title);
             view.setText(filter + " car count from " + start + " to " + end);
