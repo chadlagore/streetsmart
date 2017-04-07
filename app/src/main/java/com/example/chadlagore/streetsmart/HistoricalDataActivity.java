@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
+
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -46,6 +47,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import android.widget.ProgressBar;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.TabHost;
@@ -93,6 +95,9 @@ public class HistoricalDataActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_historical_data);
+
+        /* Collect progress bar. */
+        mProgress = (ProgressBar) findViewById(R.id.progress_bar);
 
         /* Generate toolbar at top of activity. */
         Toolbar appToolbar = (Toolbar) findViewById(R.id.historical_toolbar);
@@ -145,6 +150,10 @@ public class HistoricalDataActivity extends AppCompatActivity {
         historicalChart.invalidate();
     }
 
+    private ProgressBar mProgress;
+    private int mProgressStatus = 0;
+
+
     /**
      * A class for requesting and storing historical data from the StreetSmart API.
      * Requests execute asyncronously, but can update the historical graph by calling
@@ -157,6 +166,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
         private int start_date;
         private int end_date;
         private long id;
+        private int init_progress = 10;
         private String granularity;
         public JSONObject meta, data;
         OkHttpClient client;
@@ -182,7 +192,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
          * Generates a callback to catch the response. If the response was a success, queues
          * an asynchronous task to update the DataPoints in the plot.
          */
-        public void execute() {
+        public void execute() throws IOException {
             HttpUrl.Builder builder= new HttpUrl.Builder()
                     .scheme("http")
                     .host(base_url)
@@ -200,6 +210,9 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
             /* Build a new request. */
             Request request = new Request.Builder().url(url).build();
+
+            /* Initialize progress bar. */
+            mProgress.setProgress(init_progress);
 
             /**
              * Enqueue the request and handle responses asynchronously.
@@ -268,27 +281,37 @@ public class HistoricalDataActivity extends AppCompatActivity {
                 JSONObject data = jsonObjs[0];
                 Iterator keys = data.keys();
 
-                int i = 0; /* Publish progress too. */
-                while (keys.hasNext()) {
-                    String key = (String) keys.next();
+                /* Publish progress with linear increase. */
+                double slope = 0;
+                int i = 0;
 
-                    /* Try to collect each datapoint from the JSON. */
-                    try {
-                        double x = Double.valueOf(key);
-                        double y = Double.valueOf((Double) data.get(key));
-                        results.add(new Entry((float)x, (float)y));
-                        updateMax(x, y);
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
+                try {
+                    slope = (100 - init_progress) / meta.getDouble("results");
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    this.cancel(true);
+                }
 
-                    /* Update progress by counting number of keys. */
-                    try {
-                        publishProgress((int) ((i / (float) meta.getDouble("results")) * 100));
-                    } catch (JSONException e) {
-                        e.printStackTrace();
+                if (!isCancelled()) {
+                    while (keys.hasNext()) {
+                        String key = (String) keys.next();
+
+                        /* Try to collect each datapoint from the JSON. */
+                        try {
+                            double x = Double.valueOf(key);
+                            double y = Double.valueOf((Double) data.get(key));
+                            results.add(new Entry((float)x, (float)y));
+                            updateMax(x, y);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+                        /* Update progress by counting number of keys. */
+                        int progress = (int) (slope * i + init_progress);
+                        publishProgress(progress);
+
+                        i++;
                     }
-                    i++;
                 }
 
                 /* Sort data by timestamp. */
@@ -332,6 +355,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
             @Override
             protected void onPostExecute(List<Entry> result) {
                 addDataPointsToChart(result, max_x, max_y, min_x, min_y);
+                setProgressPercent(0);
             }
 
             /**
@@ -355,7 +379,6 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
         }
     }
-
 
     // Menu icons are inflated just as they were with actionbar
     @Override
@@ -434,7 +457,11 @@ public class HistoricalDataActivity extends AppCompatActivity {
                     HistoricalRequest request =
                             new HistoricalRequest((int)startDate.getTime(), (int)endDate.getTime(),
                                     granularity, intersectionID);
-                    request.execute();
+                    try {
+                        request.execute();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         });
@@ -604,7 +631,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
      * @param progressPercent
      */
     public void setProgressPercent(Integer progressPercent) {
-        /* Update progress bar. */
+        mProgress.setProgress(progressPercent);
     }
 
     /**
