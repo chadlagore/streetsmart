@@ -182,8 +182,8 @@ public class HistoricalDataActivity extends AppCompatActivity {
          * @param id the intersection id
          */
         public HistoricalRequest(int start_date, int end_date, String granularity, long id) {
-            this.start_date = start_date;
-            this.end_date = end_date;
+            this.start_date = start_date*10000;
+            this.end_date = end_date*10000;
             this.granularity = granularity;
             this.id = id;
             this.client = new OkHttpClient();
@@ -469,6 +469,14 @@ public class HistoricalDataActivity extends AppCompatActivity {
                         request.execute();
                     } catch (IOException e) {
                         e.printStackTrace();
+
+                        /* Build the dialogue with appropriate information */
+                        AlertDialog.Builder adb = new AlertDialog.Builder(getApplicationContext())
+                                .setTitle("Request Failed")
+                                .setMessage("Data not available at the moment, " +
+                                    "please try again later");
+
+                        AlertDialog ad = adb.show();
                     }
                 }
             }
