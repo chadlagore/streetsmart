@@ -295,8 +295,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onClick(View view) {
 
-        /* Start a historical activity. */
+        /* Start a historical activity, and send intersection along. */
         Intent i = new Intent(this, HistoricalDataActivity.class);
+        i.putExtra("intersection_id",
+                String.valueOf(mapFragment.trafficGraph.intersection_id));
         startActivity(i);
     }
 

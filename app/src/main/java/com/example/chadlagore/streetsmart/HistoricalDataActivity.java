@@ -5,11 +5,11 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
-import android.provider.ContactsContract;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -51,6 +51,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
     private final String csv_file = "street_smart_historical.csv";
     private File cache_dir;
     private Set<DataPoint> cached_result;
+    private long intersection_id;
 
     /**
      * A class for requesting and storing historical data from the StreetSmart API.
@@ -269,6 +270,11 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
         /* Add back button for ancestral navigation. */
         actionBar.setDisplayHomeAsUpEnabled(true);
+
+        Bundle extras = getIntent().getExtras();
+        intersection_id = Long.valueOf(extras.getString("intersection_id"));
+
+        Log.d(TAG, "intersection id" + String.valueOf(intersection_id));
 
         /* TODO: delete this mock request. */
         HistoricalRequest request = new HistoricalRequest(
