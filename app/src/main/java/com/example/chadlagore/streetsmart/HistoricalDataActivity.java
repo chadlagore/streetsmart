@@ -1,5 +1,12 @@
 package com.example.chadlagore.streetsmart;
 
+
+import android.app.DatePickerDialog;
+import android.app.Dialog;
+import android.app.DialogFragment;
+import android.os.AsyncTask;
+import android.support.v4.view.LayoutInflaterFactory;
+import android.support.v4.view.ViewParentCompat;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -10,11 +17,16 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
+import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
+import android.view.View;
+import android.view.View.OnClickListener;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -22,6 +34,7 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Calendar;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,6 +52,9 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import android.widget.Button;
+import android.widget.DatePicker;
+import android.widget.FrameLayout;
 import android.widget.TabHost;
 import android.widget.Toast;
 
@@ -47,7 +63,19 @@ import static android.support.v4.content.FileProvider.getUriForFile;
 public class HistoricalDataActivity extends AppCompatActivity {
 
     private final String TAG = "historical_data_activity";
+
+    /* TabHost and members */
     private TabHost tabHost = null;
+    private TabHost.TabSpec hourlyTab;
+    private TabHost.TabSpec dailyTab;
+    private TabHost.TabSpec weeklyTab;
+    private TabHost.TabSpec monthlyTab;
+    private TabHost.TabSpec yearlyTab;
+
+    /* Start and end dates */
+    protected Date endDate;
+    protected Date startDate;
+
     private final String csv_file = "street_smart_historical.csv";
     private File cache_dir;
     private Set<DataPoint> cached_result;
@@ -267,14 +295,37 @@ public class HistoricalDataActivity extends AppCompatActivity {
         setSupportActionBar(appToolbar);
         ActionBar actionBar = getSupportActionBar();
 
-        /* Add back button for ancestral navigation. */
-        actionBar.setDisplayHomeAsUpEnabled(true);
+        if (actionBar != null) {
+            Log.i(TAG, "action bar not null");
+            actionBar.setDisplayHomeAsUpEnabled(true);
+        }
 
-        /* TODO: delete this mock request. */
-        HistoricalRequest request = new HistoricalRequest(
-                1490200000, 1490831240, "hourly", 250);
-        request.execute();
+        /* Create onClick listeners for the date selection buttons */
+        Button startDateButton = (Button) findViewById(R.id.start_date_button);
+        startDateButton.setOnClickListener(new Button.OnClickListener() {
+            public void onClick(View v) {
+                Log.i("Historical Activity", "The onClickListener for the start date button" +
+                        "was triggered");
+                onStartDayClick(v);
+            }
+        });
 
+        /* And now the listener for the end date button */
+        Button endDateButton = (Button) findViewById(R.id.end_date_button);
+        endDateButton.setOnClickListener(new Button.OnClickListener() {
+            public void onClick(View v) {
+                Log.i("Historical Activity", "The onClickListener for the end date button was" +
+                        "triggered");
+                onEndDayClick(v);
+            }
+        });
+//        /* Add back button for ancestral navigation. */
+//        actionBar.setDisplayHomeAsUpEnabled(true);
+//
+//        /* TODO: delete this mock request. */
+//        HistoricalRequest request = new HistoricalRequest(
+//                1490200000, 1490831240, "hourly", 250);
+//        request.execute();
     }
 
     // Menu icons are inflated just as they were with actionbar
@@ -290,72 +341,268 @@ public class HistoricalDataActivity extends AppCompatActivity {
         TabHost.TabSpec spec = tabHost.newTabSpec("Hourly");
         spec.setContent(R.id.Hourly);
         spec.setIndicator("Hourly");
+        this.hourlyTab = spec;
         tabHost.addTab(spec);
 
         spec = tabHost.newTabSpec("Daily");
         spec.setContent(R.id.Daily);
         spec.setIndicator("Daily");
+        this.dailyTab = spec;
         tabHost.addTab(spec);
 
         spec = tabHost.newTabSpec("Weekly");
         spec.setContent(R.id.Weekly);
         spec.setIndicator("Weekly");
+        this.weeklyTab = spec;
         tabHost.addTab(spec);
 
         spec = tabHost.newTabSpec("Monthly");
         spec.setContent(R.id.Weekly);
         spec.setIndicator("Monthly");
+        this.monthlyTab = spec;
         tabHost.addTab(spec);
 
         spec = tabHost.newTabSpec("Yearly");
         spec.setContent(R.id.Weekly);
         spec.setIndicator("Yearly");
+        this.yearlyTab = spec;
         tabHost.addTab(spec);
 
+        /* We'll also need to add a listener to detect when tabs change */
+        tabHost.setOnTabChangedListener(new TabHost.OnTabChangeListener() {
+            @Override
+            public void onTabChanged(String tabId) {
+
+            /* For each tab, we'll need to retreive different
+            information from the server. Handle each case seperately */
+            if(hourlyTab.getTag().equals(tabId)) {
+                onHourlyClick();
+            } else if (dailyTab.getTag().equals(tabId)) {
+                onDailyClick();
+            } else if (weeklyTab.getTag().equals(tabId)) {
+                onWeeklyClick();
+            } else if (monthlyTab.getTag().equals(tabId)) {
+                onMonthlyClick();
+            } else if (yearlyTab.getTag().equals(tabId)) {
+                onYearlyClick();
+
+            /* Finally, if the previous cases were exhausted, we have a
+            problem, print the tabId and gracefully exit */
+            } else {
+                System.out.println("The selected tab was not found. The id is: " + tabId);
+                Exception e = new Exception();
+                e.printStackTrace();
+                System.exit(0);
+            }
+            }
+        });
+
+//        HistoricalRequest request = new HistoricalRequest(
+//                1490800000, 1490831240, "hourly", 250);
+//        request.execute();
+//        return true;
         return true;
     }
 
     /**
-     * Handle hourly click.
-     * @param view
+     * Sub-class which defines the DatePicker dialog fragment which presents
+     * to the user the view to select start and end dates for the historical
+     * period they wish to view.
      */
-    private void onHourlyClick(View view) {
-        // HistoricalRequest request = new HistoricalRequest( ... );
-        // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
+    public static class DatePickerFragment extends DialogFragment implements
+            DatePickerDialog.OnDateSetListener {
+
+        /* Reference to the date object of the superclass which
+        this object corresponds to */
+        public HistoricalDataActivity hda;
+
+        /* Assign to one of the two options below */
+        public Integer id;
+
+        /* Start day/ end day */
+        private Integer START_DAY = 1;
+        private Integer END_DAY = 2;
+
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            final Calendar c = Calendar.getInstance();
+            int year = c.get(Calendar.YEAR);
+            int month = c.get(Calendar.MONTH);
+            int day = c.get(Calendar.DAY_OF_MONTH);
+
+            return new DatePickerDialog(getActivity(), this, year, month, day);
+        }
+
+        /**
+         * Function is a callback, called when the user enters a new start date
+         * or a new end date. Parameters are filled automatically. Logic is that
+         * start date and end dates are handled separately, having their info
+         * stored in members of this class.
+         *
+         * The Integer 'id' identifies this object as either being a start date
+         * or an end date. Be sure to assign it an appropriate value when you
+         * create it.
+         *
+         * @param dp, the date picker
+         *
+         * @param year, an integer representing the year
+         *
+         * @param month, integer representing the year
+         *
+         * @param day, integer representing the day of the month
+         */
+        public void onDateSet(DatePicker dp, int year, int month, int day) {
+
+            /* Handle the end date */
+            if (this.id.equals(this.END_DAY)) {
+                this.hda.endDate =  getDateFromDatePicker(dp);;
+            }
+
+            /* Handle the start date */
+            if (this.id.equals(this.START_DAY)) {
+                this.hda.startDate = getDateFromDatePicker(dp);
+            }
+        }
+
+        /**
+         * Method returns a Date object from a datePicker object.
+         *
+         * @param datePicker, the datePicker returned from the callback
+         *
+         * @return, the date object
+         */
+        public static java.util.Date getDateFromDatePicker(DatePicker datePicker){
+            int day = datePicker.getDayOfMonth();
+            int month = datePicker.getMonth();
+            int year =  datePicker.getYear();
+
+            Calendar calendar = Calendar.getInstance();
+            calendar.set(year, month, day);
+
+            return calendar.getTime();
+        }
+    }
+
+    /**
+     * Method simply shows the date picker dialog fragment
+     * for the end date of the period.
+     *
+     * @param view, the view which collects information about the
+     *              date from the user
+     */
+    public void onEndDayClick(View view) {
+        DialogFragment df = new DatePickerFragment();
+
+        /* Set the id so we can identify the date later */
+        DatePickerFragment dpf = (DatePickerFragment) df;
+        dpf.id = dpf.END_DAY;
+
+        /* Hack but it will work */
+        dpf.hda = this;
+
+        /* Show the dialog */
+        df.show(getFragmentManager(), "endDatePicker");
+
+        Log.i(this.TAG, "The dialog for entering the end date was opened");
+    }
+
+    /**
+     * Method displays the dialog fragment for the user to enter
+     * the start date of the period over which to view historical
+     * data for the intersection in question.
+     *
+     * @param view, the view which collects information from the user
+     */
+    public void onStartDayClick(View view) {
+        DialogFragment df = new DatePickerFragment();
+
+        /* Set the id so we can identify it later */
+        DatePickerFragment dpf = (DatePickerFragment) df;
+        dpf.id = dpf.START_DAY;
+
+        /* Hack but it will work */
+        dpf.hda = this;
+
+        /* Show the dialog */
+        df.show(getFragmentManager(), "startDatePicker");
+
+        Log.i(this.TAG, "The dialog for entering the start date was opened");
+    }
+
+    /**
+     * Handle hourly click
+     */
+    private void onHourlyClick() {
+
+        Log.d(this.TAG, "This is the end date after selection: " + this.endDate.toString());
+        Log.d(this.TAG, "This is the start date after selection: " + this.startDate.toString());
+
+        /* Make graphs invisible */
+        makeGraphsInvisible();
+
+        /* Now make the relevant graph visible */
+        final LayoutInflater factory = getLayoutInflater();
+        final View v = factory.inflate(R.layout.activity_historical_data, null);
+        View graph = (GraphView) v.findViewById(R.id.hourly_graph);
+        graph.setVisibility(View.VISIBLE);
+
+        //HistoricalRequest request = new HistoricalRequest();
+        //request.execute();
+    }
+
+    /**
+     * Method simply sets each graph view in the historical data
+     * layout to invisible. This is necessary because the views will
+     * otherwise overlap.
+     */
+    private void makeGraphsInvisible() {
+        final LayoutInflater inf = getLayoutInflater();
+        final View view = inf.inflate(R.layout.activity_historical_data, null);
+
+        GraphView gv = (GraphView) view.findViewById(R.id.hourly_graph);
+        gv.setVisibility(View.INVISIBLE);
+
+        gv = (GraphView) view.findViewById(R.id.daily_graph);
+        gv.setVisibility(View.INVISIBLE);
+
+        gv = (GraphView) view.findViewById(R.id.weekly_graph);
+        gv.setVisibility(View.INVISIBLE);
+
+        gv = (GraphView) view.findViewById(R.id.monthly_graph);
+        gv.setVisibility(View.INVISIBLE);
+
+        gv = (GraphView) view.findViewById(R.id.yearly_graph);
+        gv.setVisibility(View.INVISIBLE);
     }
 
     /**
      * Handle daily click.
-     * @param view
      */
-    private void onDailyClick(View view) {
+    private void onDailyClick() {
         // HistoricalRequest request = new HistoricalRequest( ... );
         // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
     }
 
     /**
      * Handle weekly click.
-     * @param view
      */
-    private void onWeeklyClick(View view) {
+    private void onWeeklyClick() {
         // HistoricalRequest request = new HistoricalRequest( ... );
         // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
     }
 
     /**
      * Handle monthly click.
-     * @param view
      */
-    private void onMonthlyClick(View view) {
+    private void onMonthlyClick() {
         // HistoricalRequest request = new HistoricalRequest( ... );
         // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
     }
 
     /**
      * Handle yearly click.
-     * @param view
      */
-    private void onYearlyClick(View view) {
+    private void onYearlyClick() {
         // HistoricalRequest request = new HistoricalRequest( ... );
         // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
     }
@@ -379,6 +626,8 @@ public class HistoricalDataActivity extends AppCompatActivity {
     private void addDataPointsToChart(Set<DataPoint> result, double max_x, double max_y,
                                       double min_x, double min_y) {
         /* Add datapoints to chart, adjust axes etc. */
+        //tabHost.getCurrentTabTag()
+        Log.i(TAG, result.toString());
         this.cached_result = result;
     }
 
