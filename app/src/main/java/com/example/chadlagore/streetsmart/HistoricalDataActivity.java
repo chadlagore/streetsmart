@@ -251,7 +251,13 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
         }
 
-        public void updateGraphTitle(Date startDate, Date endDate){
+        public void updateGraphTitle(Date startDate, Date endDate) {
+            if (startDate == null || endDate == null) {
+                /* This should only happen on the initial request called in onCreate */
+                startDate = new Date(System.currentTimeMillis());
+                endDate = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
+            }
+            
             SimpleDateFormat sd = new SimpleDateFormat("dd/M/yyyy");
             String start = sd.format(startDate);
             SimpleDateFormat ed = new SimpleDateFormat("dd/M/yyyy");
@@ -883,8 +889,8 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
         /* Create an hourly chart of data from yesterday to today */
         Log.d(TAG, "Setting up default graph");
-        Date today = startDate = new Date(System.currentTimeMillis());
-        Date yesterday = endDate = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
+        Date today = new Date(System.currentTimeMillis());
+        Date yesterday = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
         HistoricalRequest request = new HistoricalRequest(yesterday.getTime()/1000,
                 today.getTime()/1000, "hourly", intersectionID);
 
