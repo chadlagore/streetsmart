@@ -520,7 +520,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
         /* Build the dialogue with appropriate information */
         AlertDialog.Builder adb = new AlertDialog.Builder(this)
-                .setTitle("Invalid Stat Date")
+                .setTitle("Invalid Start Date")
                 .setMessage("The start date cannot be after the end date.");
 
         // Display the dialogue
