@@ -257,11 +257,10 @@ public class HistoricalDataActivity extends AppCompatActivity {
                 startDate = new Date(System.currentTimeMillis());
                 endDate = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
             }
-            
+
             SimpleDateFormat sd = new SimpleDateFormat("EEE, MMM d yyyy");
             String start = sd.format(startDate);
-            SimpleDateFormat ed = new SimpleDateFormat("EEE, MMM d yyyy");
-            String end = ed.format(endDate);
+            String end = sd.format(endDate);
             String filter = granularity.substring(0, 1).toUpperCase() + granularity.substring(1);
             TextView view = (TextView) findViewById(R.id.hist_graph_title);
             view.setText(filter + " car count from " + start + " to " + end);
@@ -883,7 +882,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
             @Override
             public String getFormattedValue(float xValue, AxisBase axisBase) {
                 Date itemDate = new Date((long)xValue*1000);
-                SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy");
+                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
                 format.setTimeZone(TimeZone.getTimeZone("UTC"));
                 return format.format(itemDate);
             }
