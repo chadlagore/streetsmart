@@ -186,8 +186,8 @@ public class HistoricalDataActivity extends AppCompatActivity {
          * @param id the intersection id
          */
         public HistoricalRequest(long start_date, long end_date, String granularity, long id) {
-            this.start_date = start_date/1000;
-            this.end_date = end_date/1000;
+            this.start_date = start_date;
+            this.end_date = end_date;
             this.granularity = granularity;
             this.id = id;
             this.client = new OkHttpClient();
@@ -472,7 +472,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
                 if (granularity != null) {
                     HistoricalRequest request =
-                            new HistoricalRequest(startDate.getTime(), endDate.getTime(),
+                            new HistoricalRequest(startDate.getTime()/1000, endDate.getTime()/1000,
                                     granularity, intersectionID);
                     try {
                         makingRequest = true;
