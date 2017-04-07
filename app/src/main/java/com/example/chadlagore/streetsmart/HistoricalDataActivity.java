@@ -251,7 +251,13 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
         }
 
-        public void updateGraphTitle(Date startDate, Date endDate){
+        public void updateGraphTitle(Date startDate, Date endDate) {
+            if (startDate == null || endDate == null) {
+                /* This should only happen on the initial request called in onCreate */
+                startDate = new Date(System.currentTimeMillis());
+                endDate = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
+            }
+            
             SimpleDateFormat sd = new SimpleDateFormat("EEE, MMM d yyyy");
             String start = sd.format(startDate);
             SimpleDateFormat ed = new SimpleDateFormat("EEE, MMM d yyyy");
@@ -448,6 +454,12 @@ public class HistoricalDataActivity extends AppCompatActivity {
                     return;
                 }
 
+                /* Handle the case where the user enters a start date after the end date */
+                if(startDate.after(endDate)) {
+                    printStartDateErrorMessage();
+                    return;
+                }
+
                 String granularity = null;
 
                 /*
@@ -498,13 +510,37 @@ public class HistoricalDataActivity extends AppCompatActivity {
         return true;
     }
 
+    /**
+     * Method simply displays a dialogue which notifies the user that they
+     * selected a start date which is after the end date. There are no options
+     * in this dialogue, other than to exit it and return to the previous screen.
+     */
+    private void printStartDateErrorMessage() {
+        Log.i(this.TAG, "The user selected a start date after the end date.");
+
+        /* Build the dialogue with appropriate information */
+        AlertDialog.Builder adb = new AlertDialog.Builder(this)
+                .setTitle("Invalid Start Date")
+                .setMessage("The start date cannot be after the end date.");
+
+        // Display the dialogue
+        adb.show();
+    }
+
+    /**
+     * Method simply displays a message to the user indicating that the most
+     * recent request to the server failed.
+     */
     private void showIOErrorDialog() {
+        Log.i(this.TAG, "An IO exception was raised when requesting data from the server.");
+
         /* Build the dialogue with appropriate information */
         AlertDialog.Builder adb = new AlertDialog.Builder(getApplicationContext())
                 .setTitle("Request Failed")
                 .setMessage("Data not available at the moment, " +
                         "please try again later");
 
+        // Display the dialogue
         adb.show();
     }
 
@@ -524,6 +560,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
                 .setTitle(date + "not selected.")
                 .setMessage("Please choose both start and end dates");
 
+        // Display the dialogue
         adb.show();
     }
 
@@ -883,8 +920,8 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
         /* Create an hourly chart of data from yesterday to today */
         Log.d(TAG, "Setting up default graph");
-        Date today = startDate = new Date(System.currentTimeMillis());
-        Date yesterday = endDate = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
+        Date today = new Date(System.currentTimeMillis());
+        Date yesterday = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
         HistoricalRequest request = new HistoricalRequest(yesterday.getTime()/1000,
                 today.getTime()/1000, "hourly", intersectionID);
 

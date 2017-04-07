@@ -21,6 +21,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
@@ -83,6 +84,14 @@ public class BluetoothConnectionActivity extends AppCompatActivity {
 
         /* Set up distance plot */
         chart = (BarChart) findViewById(R.id.distance_chart);
+
+        /* Format chart YAxis colors to white */
+        chart.getAxisRight().setEnabled(false);
+        YAxis yAxisLeft = chart.getAxisLeft();
+        yAxisLeft.setTextColor(Color.WHITE);
+        yAxisLeft.setTextSize(12);
+        yAxisLeft.setAxisMinimum(0);
+
         initDataSets();
         chart.setData(distanceData);
         chart.invalidate();
