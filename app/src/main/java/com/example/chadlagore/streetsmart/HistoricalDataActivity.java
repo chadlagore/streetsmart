@@ -28,6 +28,8 @@ import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.formatter.IValueFormatter;
+import com.github.mikephil.charting.utils.ViewPortHandler;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
 import android.view.View;
@@ -410,22 +412,22 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
             case R.id.daily_button:
                 Log.d(TAG, "Showing hourly data.");
-                currentDataset = hourlyData;
+                currentDataset = dailyData;
                 granularity = "daily";
                 break;
             case R.id.weekly_button:
                 Log.d(TAG, "Showing hourly data.");
-                currentDataset = hourlyData;
+                currentDataset = weeklyData;
                 granularity = "weekly";
                 break;
             case R.id.monthly_button:
                 Log.d(TAG, "Showing hourly data.");
-                currentDataset = hourlyData;
+                currentDataset = monthlyData;
                 granularity = "monthly";
                 break;
             case R.id.yearly_button:
                 Log.d(TAG, "Showing hourly data.");
-                currentDataset = hourlyData;
+                currentDataset = yearlyData;
                 granularity = "yearly";
                 break;
 
