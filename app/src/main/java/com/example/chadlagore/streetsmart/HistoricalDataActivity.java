@@ -252,9 +252,9 @@ public class HistoricalDataActivity extends AppCompatActivity {
         }
 
         public void updateGraphTitle(Date startDate, Date endDate){
-            SimpleDateFormat sd = new SimpleDateFormat("dd/M/yyyy");
+            SimpleDateFormat sd = new SimpleDateFormat("EEE, MMM d yyyy");
             String start = sd.format(startDate);
-            SimpleDateFormat ed = new SimpleDateFormat("dd/M/yyyy");
+            SimpleDateFormat ed = new SimpleDateFormat("EEE, MMM d yyyy");
             String end = ed.format(endDate);
             String filter = granularity.substring(0, 1).toUpperCase() + granularity.substring(1);
             TextView view = (TextView) findViewById(R.id.hist_graph_title);
