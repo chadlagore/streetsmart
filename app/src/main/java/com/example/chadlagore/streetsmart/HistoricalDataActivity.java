@@ -33,6 +33,7 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.text.SimpleDateFormat;
@@ -41,6 +42,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.SimpleTimeZone;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -56,12 +58,14 @@ import android.widget.TabHost;
 import android.widget.Toast;
 
 import static android.support.v4.content.FileProvider.getUriForFile;
+import static okhttp3.internal.http.HttpDate.format;
 
 public class HistoricalDataActivity extends AppCompatActivity {
 
-    private final String TAG = "historical_data_activity";
+    protected final String TAG = "historical_data_activity";
 
     /* Graph objects */
+    private boolean makingRequest = false;
     private String lastTabID;
     private static LineData hourlyData;
     private static LineData dailyData;
@@ -165,8 +169,8 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
         private final String base_url = "tranquil-shore-92989.herokuapp.com";
         private final String TAG = "historical_request";
-        private int start_date;
-        private int end_date;
+        private long start_date;
+        private long end_date;
         private long id;
         private int init_progress = 10;
         private String granularity;
@@ -181,12 +185,15 @@ public class HistoricalDataActivity extends AppCompatActivity {
          * @param granularity either "hourly", "daily", "weekly", "monthly", or "yearly"
          * @param id the intersection id
          */
-        public HistoricalRequest(int start_date, int end_date, String granularity, long id) {
+        public HistoricalRequest(long start_date, long end_date, String granularity, long id) {
             this.start_date = start_date;
             this.end_date = end_date;
             this.granularity = granularity;
             this.id = id;
             this.client = new OkHttpClient();
+
+            Log.d(TAG, "Start date: " + String.valueOf(this.start_date));
+            Log.d(TAG, "End date: " + String.valueOf(this.end_date));
         }
 
         /**
@@ -429,7 +436,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
             public void onTabChanged(String tabId) {
                 Log.d(TAG, "Menu item clicked: " + tabId.toString());
 
-                if (tabId == lastTabID) return;
+                if (tabId == lastTabID || makingRequest) return;
 
                 /* Handle the case where the user doesn't enter a start/end date */
                 if (startDate == null || endDate == null) {
@@ -439,8 +446,10 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
                 String granularity = null;
 
-                /* For each tab, we'll need to retreive different
-                information from the server. Handle each case seperately */
+                /*
+                 * For each tab, we'll need to retreive different
+                 * information from the server. Handle each case separately
+                 */
                 if (hourlyTab.getTag().equals(tabId)) {
                     currentDataset = hourlyData;
                     granularity = "hourly";
@@ -463,12 +472,21 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
                 if (granularity != null) {
                     HistoricalRequest request =
-                            new HistoricalRequest((int)startDate.getTime(), (int)endDate.getTime(),
+                            new HistoricalRequest(startDate.getTime()/1000, endDate.getTime()/1000,
                                     granularity, intersectionID);
                     try {
+                        makingRequest = true;
                         request.execute();
                     } catch (IOException e) {
                         e.printStackTrace();
+
+                        /* Build the dialogue with appropriate information */
+                        AlertDialog.Builder adb = new AlertDialog.Builder(getApplicationContext())
+                                .setTitle("Request Failed")
+                                .setMessage("Data not available at the moment, " +
+                                    "please try again later");
+
+                        AlertDialog ad = adb.show();
                     }
                 }
             }
@@ -571,6 +589,8 @@ public class HistoricalDataActivity extends AppCompatActivity {
          * @param day, integer representing the day of the month
          */
         public void onDateSet(DatePicker dp, int year, int month, int day) {
+            Log.d(this.hda.TAG, "Setting date");
+
             /* Invalidate cached datasets */
             hourlyData = null;
             dailyData = null;
@@ -580,12 +600,14 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
             /* Handle the end date */
             if (this.id.equals(this.END_DAY)) {
-                this.hda.endDate =  getDateFromDatePicker(dp);;
+                this.hda.endDate = getDateFromDatePicker(dp);
+                Log.d(this.hda.TAG, "setting end date to " + this.hda.endDate);
             }
 
             /* Handle the start date */
             if (this.id.equals(this.START_DAY)) {
                 this.hda.startDate = getDateFromDatePicker(dp);
+                Log.d(this.hda.TAG, "setting start date to " + this.hda.startDate);
             }
         }
 
@@ -683,6 +705,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
         /* Add datapoints to chart, adjust axes etc. */
         cachedResult = result;
+        makingRequest = false;
     }
 
     /**
