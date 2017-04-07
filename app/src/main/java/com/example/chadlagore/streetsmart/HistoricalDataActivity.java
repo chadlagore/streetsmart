@@ -377,7 +377,9 @@ public class HistoricalDataActivity extends AppCompatActivity {
         }
     }
 
-    // Menu icons are inflated just as they were with actionbar
+    /**
+     * Menu icons are inflated just as they were with actionbar
+     */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         Log.d(TAG, "Inflating toolbar");
@@ -819,7 +821,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
         List<Entry> dummyEntries = new ArrayList<Entry>();
         dummyEntries.add(new Entry(0, 0));
         LineDataSet dataSet = new LineDataSet(dummyEntries, "Historical Data");
-        dataSet.setValueTextColor(Color.WHITE);
+        dataSet.setColor(Color.WHITE);
         hourlyData = new LineData(dataSet);
         dailyData = new LineData(dataSet);
         weeklyData = new LineData(dataSet);
@@ -854,6 +856,10 @@ public class HistoricalDataActivity extends AppCompatActivity {
         chartXAxis = historicalChart.getXAxis();
         chartXAxis.setTextColor(Color.WHITE);
         chartXAxis.setValueFormatter(xAxisTimeFormatter);
+
+        /* Format chart YAxis colors to white */
+        historicalChart.getAxisLeft().setTextColor(Color.WHITE);
+        historicalChart.getAxisRight().setTextColor(Color.WHITE);
 
         /* Add dataset to chart and set chart style */
         historicalChart.setData(currentDataset);
