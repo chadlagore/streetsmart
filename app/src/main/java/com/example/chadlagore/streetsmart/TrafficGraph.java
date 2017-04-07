@@ -74,7 +74,6 @@ public class TrafficGraph extends DialogFragment {
         intersection_id = intersection_to_graph.getIntersectionID();
 
         /* Set update timer. */
-//        scheduleMapUpdate();
         x = 0;
         return frag;
     }
@@ -102,7 +101,7 @@ public class TrafficGraph extends DialogFragment {
             try {
                 int num_bars = 11;
                 JSONObject obj = newIntersectionData.getJSONObject(0);
-                series.appendData(new DataPoint(getNewXVAlue(),
+                series.appendData(new DataPoint(getNewXValue(),
                         obj.getDouble("cars")), true, num_bars);
             } catch (JSONException e) {
                 Log.i(TAG, "received data, but failed to get object.");
@@ -114,7 +113,7 @@ public class TrafficGraph extends DialogFragment {
         }
     }
 
-    private static Integer getNewXVAlue() {
+    private static Integer getNewXValue() {
         x += 1;
         return x;
     }
@@ -213,8 +212,9 @@ public class TrafficGraph extends DialogFragment {
 
     @Override
     public void onPause() {
-        Log.i(TAG, "dismissing fragment");
         super.onPause();
+
+        /* On pause, simply dismiss this fragment. */
         this.dismiss();
     }
 
