@@ -856,10 +856,14 @@ public class HistoricalDataActivity extends AppCompatActivity {
         chartXAxis = historicalChart.getXAxis();
         chartXAxis.setTextColor(Color.WHITE);
         chartXAxis.setValueFormatter(xAxisTimeFormatter);
+        chartXAxis.setTextSize(12);
 
         /* Format chart YAxis colors to white */
-        historicalChart.getAxisLeft().setTextColor(Color.WHITE);
-        historicalChart.getAxisRight().setTextColor(Color.WHITE);
+        historicalChart.getAxisRight().setEnabled(false);
+        YAxis yAxisLeft = historicalChart.getAxisLeft();
+        yAxisLeft.setTextColor(Color.WHITE);
+        yAxisLeft.setTextSize(12);
+        yAxisLeft.setAxisMinimum(0);
 
         /* Add dataset to chart and set chart style */
         historicalChart.setData(currentDataset);
