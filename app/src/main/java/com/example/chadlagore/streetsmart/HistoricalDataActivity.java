@@ -24,6 +24,7 @@ import android.view.MenuItem;
 import android.view.View;
 
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
@@ -79,6 +80,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
     private final String csv_file = "street_smart_historical.csv";
     private File cache_dir;
     private Set<DataPoint> cached_result;
+    private int intersectionID = 1;
 
 
     /**
@@ -89,6 +91,8 @@ public class HistoricalDataActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_historical_data);
+
+//        intersectionID = getIntent().getParcelableExtra("intersectionID");
 
         /* Generate toolbar at top of activity. */
         Toolbar appToolbar = (Toolbar) findViewById(R.id.historical_toolbar);
@@ -112,7 +116,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
         yearlyData = new LineData(dataSet);
         hourlyData = new LineData(dataSet);
         currentDataset = hourlyData;
-        historicalChart.setData(hourlyData);
+        historicalChart.setData(currentDataset);
         historicalChart.notifyDataSetChanged();
         historicalChart.invalidate();
     }
@@ -370,9 +374,17 @@ public class HistoricalDataActivity extends AppCompatActivity {
      */
     private void addDataPointsToChart(Set<DataPoint> result, double max_x, double max_y,
                                       double min_x, double min_y) {
-        /* Add datapoints to chart, adjust axes etc. */
-        //tabHost.getCurrentTabTag()
-        Log.i(TAG, result.toString());
+        /* Add datapoints to chart */
+        Log.i(TAG, "Adding data to chart: " + result.toString());
+
+        int i = 0;
+        for (DataPoint dataPoint : result) {
+            currentDataset.addEntry(new Entry(i, (float)dataPoint.getY()), 0);
+            i++;
+        }
+        historicalChart.setData(currentDataset);
+        historicalChart.notifyDataSetChanged();
+        historicalChart.invalidate();
         this.cached_result = result;
     }
 
@@ -384,24 +396,37 @@ public class HistoricalDataActivity extends AppCompatActivity {
      * @param item
      */
     public boolean onOptionsItemSelected(MenuItem item) {
-        Log.d(TAG, "Menu item clicked.");
-        HistoricalRequest request = null;
+        Log.d(TAG, "Menu item clicked: " + item.getTitle());
 
-        /* Find out which button on toolbar pushed (only one for now). */
+        String granularity = null;
+
+        /* Find out which button on toolbar pushed. */
         switch (item.getItemId()) {
             case R.id.hourly_button:
                 Log.d(TAG, "Showing hourly data.");
                 currentDataset = hourlyData;
-                request = new HistoricalRequest(1491350400, 1491515080, "hourly", 1);
+                granularity = "hourly";
                 break;
 
             case R.id.daily_button:
+                Log.d(TAG, "Showing hourly data.");
+                currentDataset = hourlyData;
+                granularity = "daily";
                 break;
             case R.id.weekly_button:
+                Log.d(TAG, "Showing hourly data.");
+                currentDataset = hourlyData;
+                granularity = "weekly";
                 break;
             case R.id.monthly_button:
+                Log.d(TAG, "Showing hourly data.");
+                currentDataset = hourlyData;
+                granularity = "monthly";
                 break;
             case R.id.yearly_button:
+                Log.d(TAG, "Showing hourly data.");
+                currentDataset = hourlyData;
+                granularity = "yearly";
                 break;
 
             case R.id.export_button:
@@ -425,9 +450,12 @@ public class HistoricalDataActivity extends AppCompatActivity {
                 return super.onOptionsItemSelected(item);
         }
 
-        if (request != null) {
+        if (granularity != null) {
+            HistoricalRequest request =
+                    new HistoricalRequest(1491350400, 1491515080, granularity, intersectionID);
             request.execute();
         }
+
         return true;
     }
 
