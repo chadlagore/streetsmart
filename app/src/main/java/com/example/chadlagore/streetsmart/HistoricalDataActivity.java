@@ -5,6 +5,7 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.os.AsyncTask;
 import android.support.v4.view.LayoutInflaterFactory;
+import android.support.v4.view.ViewParentCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -24,6 +25,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -35,6 +37,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.FrameLayout;
 import android.widget.TabHost;
@@ -50,6 +53,10 @@ public class HistoricalDataActivity extends AppCompatActivity {
     private TabHost.TabSpec weeklyTab;
     private TabHost.TabSpec monthlyTab;
     private TabHost.TabSpec yearlyTab;
+
+    /* Start and end dates */
+    protected Date endDate;
+    protected Date startDate;
 
     /**
      * A class for requesting and storing historical data from the StreetSmart API.
@@ -267,6 +274,26 @@ public class HistoricalDataActivity extends AppCompatActivity {
             Log.i(TAG, "action bar not null");
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
+
+        /* Create onClick listeners for the date selection buttons */
+        Button startDateButton = (Button) findViewById(R.id.start_date_button);
+        startDateButton.setOnClickListener(new Button.OnClickListener() {
+            public void onClick(View v) {
+                Log.i("Historical Activity", "The onClickListener for the start date button" +
+                        "was triggered");
+                onStartDayClick(v);
+            }
+        });
+
+        /* And now the listener for the end date button */
+        Button endDateButton = (Button) findViewById(R.id.end_date_button);
+        endDateButton.setOnClickListener(new Button.OnClickListener() {
+            public void onClick(View v) {
+                Log.i("Historical Activity", "The onClickListener for the end date button was" +
+                        "triggered");
+                onEndDayClick(v);
+            }
+        });
     }
 
     // Menu icons are inflated just as they were with actionbar
@@ -314,28 +341,27 @@ public class HistoricalDataActivity extends AppCompatActivity {
             @Override
             public void onTabChanged(String tabId) {
 
-                /* For each tab, we'll need to retreive different
-                information from the server. Handle each case seperately */
-                if(hourlyTab.getTag().equals(tabId)) {
-                    onHourlyClick();
-                } else if (dailyTab.getTag().equals(tabId)) {
-                    onDailyClick();
-                } else if (weeklyTab.getTag().equals(tabId)) {
-                    onWeeklyClick();
-                } else if (monthlyTab.getTag().equals(tabId)) {
-                    onMonthlyClick();
-                } else if (yearlyTab.getTag().equals(tabId)) {
-                    onYearlyClick();
+            /* For each tab, we'll need to retreive different
+            information from the server. Handle each case seperately */
+            if(hourlyTab.getTag().equals(tabId)) {
+                onHourlyClick();
+            } else if (dailyTab.getTag().equals(tabId)) {
+                onDailyClick();
+            } else if (weeklyTab.getTag().equals(tabId)) {
+                onWeeklyClick();
+            } else if (monthlyTab.getTag().equals(tabId)) {
+                onMonthlyClick();
+            } else if (yearlyTab.getTag().equals(tabId)) {
+                onYearlyClick();
 
-                /* Finally, if the previous cases were exhausted, we have a
-                problem, print the tabId and gracefully exit */
-                } else {
-                    System.out.println("The selected tab was not found. The id is: " + tabId);
-                    Exception e = new Exception();
-                    e.printStackTrace();
-                    System.exit(0);
-                }
-
+            /* Finally, if the previous cases were exhausted, we have a
+            problem, print the tabId and gracefully exit */
+            } else {
+                System.out.println("The selected tab was not found. The id is: " + tabId);
+                Exception e = new Exception();
+                e.printStackTrace();
+                System.exit(0);
+            }
             }
         });
 
@@ -347,8 +373,24 @@ public class HistoricalDataActivity extends AppCompatActivity {
         return true;
     }
 
+    /**
+     * Sub-class which defines the DatePicker dialog fragment which presents
+     * to the user the view to select start and end dates for the historical
+     * period they wish to view.
+     */
     public static class DatePickerFragment extends DialogFragment implements
             DatePickerDialog.OnDateSetListener {
+
+        /* Reference to the date object of the superclass which
+        this object corresponds to */
+        public HistoricalDataActivity hda;
+
+        /* Assign to one of the two options below */
+        public Integer id;
+
+        /* Start day/ end day */
+        private Integer START_DAY = 1;
+        private Integer END_DAY = 2;
 
         @Override
         public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -360,23 +402,109 @@ public class HistoricalDataActivity extends AppCompatActivity {
             return new DatePickerDialog(getActivity(), this, year, month, day);
         }
 
+        /**
+         * Function is a callback, called when the user enters a new start date
+         * or a new end date. Parameters are filled automatically. Logic is that
+         * start date and end dates are handled separately, having their info
+         * stored in members of this class.
+         *
+         * The Integer 'id' identifies this object as either being a start date
+         * or an end date. Be sure to assign it an appropriate value when you
+         * create it.
+         *
+         * @param dp, the date picker
+         *
+         * @param year, an integer representing the year
+         *
+         * @param month, integer representing the year
+         *
+         * @param day, integer representing the day of the month
+         */
         public void onDateSet(DatePicker dp, int year, int month, int day) {
 
+            /* Handle the end date */
+            if (this.id.equals(this.END_DAY)) {
+                this.hda.endDate =  getDateFromDatePicker(dp);;
+            }
+
+            /* Handle the start date */
+            if (this.id.equals(this.START_DAY)) {
+                this.hda.startDate = getDateFromDatePicker(dp);
+            }
+        }
+
+        /**
+         * Method returns a Date object from a datePicker object.
+         *
+         * @param datePicker, the datePicker returned from the callback
+         *
+         * @return, the date object
+         */
+        public static java.util.Date getDateFromDatePicker(DatePicker datePicker){
+            int day = datePicker.getDayOfMonth();
+            int month = datePicker.getMonth();
+            int year =  datePicker.getYear();
+
+            Calendar calendar = Calendar.getInstance();
+            calendar.set(year, month, day);
+
+            return calendar.getTime();
         }
     }
 
-    public void OnEndDayClick() {
+    /**
+     * Method simply shows the date picker dialog fragment
+     * for the end date of the period.
+     *
+     * @param view, the view which collects information about the
+     *              date from the user
+     */
+    public void onEndDayClick(View view) {
+        DialogFragment df = new DatePickerFragment();
 
+        /* Set the id so we can identify the date later */
+        DatePickerFragment dpf = (DatePickerFragment) df;
+        dpf.id = dpf.END_DAY;
+
+        /* Hack but it will work */
+        dpf.hda = this;
+
+        /* Show the dialog */
+        df.show(getFragmentManager(), "endDatePicker");
+
+        Log.i(this.TAG, "The dialog for entering the end date was opened");
     }
 
-    public void onStartDayClick() {
+    /**
+     * Method displays the dialog fragment for the user to enter
+     * the start date of the period over which to view historical
+     * data for the intersection in question.
+     *
+     * @param view, the view which collects information from the user
+     */
+    public void onStartDayClick(View view) {
+        DialogFragment df = new DatePickerFragment();
 
+        /* Set the id so we can identify it later */
+        DatePickerFragment dpf = (DatePickerFragment) df;
+        dpf.id = dpf.START_DAY;
+
+        /* Hack but it will work */
+        dpf.hda = this;
+
+        /* Show the dialog */
+        df.show(getFragmentManager(), "startDatePicker");
+
+        Log.i(this.TAG, "The dialog for entering the start date was opened");
     }
 
     /**
      * Handle hourly click
      */
     private void onHourlyClick() {
+
+        Log.d(this.TAG, "This is the end date after selection: " + this.endDate.toString());
+        Log.d(this.TAG, "This is the start date after selection: " + this.startDate.toString());
 
         /* Make graphs invisible */
         makeGraphsInvisible();
