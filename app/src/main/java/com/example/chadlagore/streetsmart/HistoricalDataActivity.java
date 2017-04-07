@@ -14,7 +14,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.LayoutInflater;
+
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -68,6 +68,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
     private LineChart historicalChart;
     private final String csv_file = "street_smart_historical.csv";
     private File cache_dir;
+    private long intersection_id;
     private List<Entry> cachedResult;
     private int intersectionID = 1;
 
@@ -92,8 +93,6 @@ public class HistoricalDataActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_historical_data);
-
-//        intersectionID = getIntent().getParcelableExtra("intersectionID");
 
         /* Generate toolbar at top of activity. */
         Toolbar appToolbar = (Toolbar) findViewById(R.id.historical_toolbar);
@@ -122,6 +121,10 @@ public class HistoricalDataActivity extends AppCompatActivity {
                 onEndDayClick(v);
             }
         });
+
+        /* Collect intersection id */
+        Bundle extras = getIntent().getExtras();
+        intersection_id = Long.valueOf(extras.getString("intersection_id"));
 
         /* Set up historical data plot */
         historicalChart = (LineChart) findViewById(R.id.historical_chart);

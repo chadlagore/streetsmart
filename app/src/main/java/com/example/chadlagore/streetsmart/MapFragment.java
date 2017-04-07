@@ -55,6 +55,9 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
     // initial location
     private int curMapTypeIndex = 1;
 
+    /* Traffic graph fragment. */
+    public TrafficGraph trafficGraph;
+
     /*
      * Connect to GoogleMapsAPI.
      */
@@ -261,7 +264,7 @@ public class MapFragment extends SupportMapFragment implements GoogleApiClient.C
         Intersection intersection = ((MainActivity)getActivity()).getIntersection(id);
 
         /* Build graph. */
-        TrafficGraph trafficGraph = TrafficGraph.newInstance(intersection);
+        this.trafficGraph = TrafficGraph.newInstance(intersection);
         trafficGraph.show(getActivity().getFragmentManager(), "dialog_layout");
     }
 

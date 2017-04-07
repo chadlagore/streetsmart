@@ -46,7 +46,7 @@ public class TrafficGraph extends DialogFragment {
     /* Class debugging tag. */
     static final private String TAG = "traffic_graph";
 
-    static private Long intersection_id;
+    static public Long intersection_id;
     static private Intersection intersection;
     static private StreetSmartClient client;
     private static TimerTask graphUpdateTimer = null;
