@@ -1,18 +1,14 @@
 package com.example.chadlagore.streetsmart;
 
-
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.graphics.Color;
 import android.os.AsyncTask;
-import android.support.v4.view.LayoutInflaterFactory;
-import android.support.v4.view.ViewParentCompat;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
-import android.provider.ContactsContract;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -23,10 +19,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
-import com.jjoe64.graphview.GraphView;
-import com.jjoe64.graphview.series.DataPoint;
-import android.view.View;
-import android.view.View.OnClickListener;
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -34,16 +30,14 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -54,7 +48,6 @@ import okhttp3.Response;
 
 import android.widget.Button;
 import android.widget.DatePicker;
-import android.widget.FrameLayout;
 import android.widget.TabHost;
 import android.widget.Toast;
 
@@ -64,7 +57,21 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
     private final String TAG = "historical_data_activity";
 
-    /* TabHost and members */
+    /* Graph objects */
+    private String lastTabID;
+    private static LineData hourlyData;
+    private static LineData dailyData;
+    private static LineData weeklyData;
+    private static LineData monthlyData;
+    private static LineData yearlyData;
+    private static LineData currentDataset;
+    private LineChart historicalChart;
+    private final String csv_file = "street_smart_historical.csv";
+    private File cache_dir;
+    private List<Entry> cachedResult;
+    private int intersectionID = 1;
+
+    /* Tab objects */
     private TabHost tabHost = null;
     private TabHost.TabSpec hourlyTab;
     private TabHost.TabSpec dailyTab;
@@ -76,9 +83,64 @@ public class HistoricalDataActivity extends AppCompatActivity {
     protected Date endDate;
     protected Date startDate;
 
-    private final String csv_file = "street_smart_historical.csv";
-    private File cache_dir;
-    private Set<DataPoint> cached_result;
+
+    /**
+     * Set content view, add toolbar.
+     * @param savedInstanceState
+     */
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_historical_data);
+
+//        intersectionID = getIntent().getParcelableExtra("intersectionID");
+
+        /* Generate toolbar at top of activity. */
+        Toolbar appToolbar = (Toolbar) findViewById(R.id.historical_toolbar);
+        setSupportActionBar(appToolbar);
+        ActionBar actionBar = getSupportActionBar();
+
+        /* Add back button for ancestral navigation. */
+        actionBar.setDisplayHomeAsUpEnabled(true);
+
+         /* Create onClick listeners for the date selection buttons */
+        Button startDateButton = (Button) findViewById(R.id.start_date_button);
+        startDateButton.setOnClickListener(new Button.OnClickListener() {
+            public void onClick(View v) {
+                Log.i("Historical Activity", "The onClickListener for the start date button" +
+                        "was triggered");
+                onStartDayClick(v);
+            }
+        });
+
+        /* And now the listener for the end date button */
+        Button endDateButton = (Button) findViewById(R.id.end_date_button);
+        endDateButton.setOnClickListener(new Button.OnClickListener() {
+            public void onClick(View v) {
+                Log.i("Historical Activity", "The onClickListener for the end date button was" +
+                        "triggered");
+                onEndDayClick(v);
+            }
+        });
+
+        /* Set up historical data plot */
+        historicalChart = (LineChart) findViewById(R.id.historical_chart);
+
+        List<Entry> dummyEntries = new ArrayList<Entry>();
+        dummyEntries.add(new Entry(0, 0));
+        LineDataSet dataSet = new LineDataSet(dummyEntries, "Historical Data");
+        dataSet.setValueTextColor(Color.WHITE);
+        hourlyData = new LineData(dataSet);
+        dailyData = new LineData(dataSet);
+        weeklyData = new LineData(dataSet);
+        monthlyData = new LineData(dataSet);
+        yearlyData = new LineData(dataSet);
+        hourlyData = new LineData(dataSet);
+        currentDataset = hourlyData;
+        historicalChart.setData(currentDataset);
+        historicalChart.notifyDataSetChanged();
+        historicalChart.invalidate();
+    }
 
     /**
      * A class for requesting and storing historical data from the StreetSmart API.
@@ -87,7 +149,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
      */
     public class HistoricalRequest {
 
-        private final String base_url = "tranquil-shore-92989.herokuapp.com";;
+        private final String base_url = "tranquil-shore-92989.herokuapp.com";
         private final String TAG = "historical_request";
         private int start_date;
         private int end_date;
@@ -180,7 +242,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
          * AsyncTask to add new DataPoints from API into DataPoint Set.
          * Updates progress in terms of the number of data points it has yet to update.
          */
-        public class AddDataPointsToSet extends AsyncTask<JSONObject, Integer, Set<DataPoint>> {
+        public class AddDataPointsToSet extends AsyncTask<JSONObject, Integer, List<Entry>> {
 
             /*
              * Calculate these in `doInBackground`, then pass them to addDataPointsToChart
@@ -194,10 +256,10 @@ public class HistoricalDataActivity extends AppCompatActivity {
              * @return A Set of DataPoints for plotting.
              */
             @Override
-            protected Set<DataPoint> doInBackground(JSONObject... jsonObjs) {
+            protected List<Entry> doInBackground(JSONObject... jsonObjs) {
 
                 /* List for results. */
-                Set<DataPoint> results = new HashSet<DataPoint>();
+                List<Entry> results = new ArrayList<Entry>();
 
                 /* Only one object is actually passed (data). */
                 JSONObject data = jsonObjs[0];
@@ -211,9 +273,8 @@ public class HistoricalDataActivity extends AppCompatActivity {
                     try {
                         double x = Double.valueOf(key);
                         double y = Double.valueOf((Double) data.get(key));
-                        results.add(new DataPoint(x,y));
+                        results.add(new Entry((float)x, (float)y));
                         updateMax(x, y);
-
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -226,6 +287,17 @@ public class HistoricalDataActivity extends AppCompatActivity {
                     }
                     i++;
                 }
+
+                /* Sort data by timestamp. */
+                Collections.sort(results, new Comparator<Entry>() {
+
+                    @Override
+                    public int compare(Entry dp1, Entry dp2) {
+                        return (int)(dp1.getX() - dp2.getX());
+                    }
+                });
+
+                cachedResult = results;
 
                 return results;
             }
@@ -255,7 +327,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
              * @param result
              */
             @Override
-            protected void onPostExecute(Set<DataPoint> result) {
+            protected void onPostExecute(List<Entry> result) {
                 addDataPointsToChart(result, max_x, max_y, min_x, min_y);
             }
 
@@ -281,58 +353,13 @@ public class HistoricalDataActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Set content view, add toolbar.
-     * @param savedInstanceState
-     */
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_historical_data);
-
-        /* Generate toolbar at top of activity. */
-        Toolbar appToolbar = (Toolbar) findViewById(R.id.historical_toolbar);
-        setSupportActionBar(appToolbar);
-        ActionBar actionBar = getSupportActionBar();
-
-        if (actionBar != null) {
-            Log.i(TAG, "action bar not null");
-            actionBar.setDisplayHomeAsUpEnabled(true);
-        }
-
-        /* Create onClick listeners for the date selection buttons */
-        Button startDateButton = (Button) findViewById(R.id.start_date_button);
-        startDateButton.setOnClickListener(new Button.OnClickListener() {
-            public void onClick(View v) {
-                Log.i("Historical Activity", "The onClickListener for the start date button" +
-                        "was triggered");
-                onStartDayClick(v);
-            }
-        });
-
-        /* And now the listener for the end date button */
-        Button endDateButton = (Button) findViewById(R.id.end_date_button);
-        endDateButton.setOnClickListener(new Button.OnClickListener() {
-            public void onClick(View v) {
-                Log.i("Historical Activity", "The onClickListener for the end date button was" +
-                        "triggered");
-                onEndDayClick(v);
-            }
-        });
-//        /* Add back button for ancestral navigation. */
-//        actionBar.setDisplayHomeAsUpEnabled(true);
-//
-//        /* TODO: delete this mock request. */
-//        HistoricalRequest request = new HistoricalRequest(
-//                1490200000, 1490831240, "hourly", 250);
-//        request.execute();
-    }
 
     // Menu icons are inflated just as they were with actionbar
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
+        Log.d(TAG, "Inflating toolbar");
         getMenuInflater().inflate(R.menu.historical_menu, menu);
+
         /* Now we create the view for the historical data */
         this.tabHost = (TabHost) findViewById(R.id.tabHost);
         tabHost.setup();
@@ -372,35 +399,69 @@ public class HistoricalDataActivity extends AppCompatActivity {
         tabHost.setOnTabChangedListener(new TabHost.OnTabChangeListener() {
             @Override
             public void onTabChanged(String tabId) {
+                Log.d(TAG, "Menu item clicked: " + tabId.toString());
 
-            /* For each tab, we'll need to retreive different
-            information from the server. Handle each case seperately */
-            if(hourlyTab.getTag().equals(tabId)) {
-                onHourlyClick();
-            } else if (dailyTab.getTag().equals(tabId)) {
-                onDailyClick();
-            } else if (weeklyTab.getTag().equals(tabId)) {
-                onWeeklyClick();
-            } else if (monthlyTab.getTag().equals(tabId)) {
-                onMonthlyClick();
-            } else if (yearlyTab.getTag().equals(tabId)) {
-                onYearlyClick();
+                if (tabId == lastTabID) return;
 
-            /* Finally, if the previous cases were exhausted, we have a
-            problem, print the tabId and gracefully exit */
-            } else {
-                System.out.println("The selected tab was not found. The id is: " + tabId);
-                Exception e = new Exception();
-                e.printStackTrace();
-                System.exit(0);
-            }
+                String granularity = null;
+
+                /* For each tab, we'll need to retreive different
+                information from the server. Handle each case seperately */
+                if (hourlyTab.getTag().equals(tabId)) {
+                    currentDataset = hourlyData;
+                    granularity = "hourly";
+                } else if (dailyTab.getTag().equals(tabId)) {
+                    currentDataset = dailyData;
+                    granularity = "daily";
+                } else if (weeklyTab.getTag().equals(tabId)) {
+                    currentDataset = weeklyData;
+                    granularity = "weekly";
+                } else if (monthlyTab.getTag().equals(tabId)) {
+                    currentDataset = monthlyData;
+                    granularity = "monthly";
+                } else if (yearlyTab.getTag().equals(tabId)) {
+                    currentDataset = yearlyData;
+                    granularity = "yearly";
+                }
+
+                lastTabID = tabId;
+                Log.d(TAG, "Showing " + granularity+ " data.");
+
+                if (granularity != null) {
+                    HistoricalRequest request =
+                            new HistoricalRequest((int)startDate.getTime(), (int)endDate.getTime(),
+                                    granularity, intersectionID);
+                    request.execute();
+                }
             }
         });
 
-//        HistoricalRequest request = new HistoricalRequest(
-//                1490800000, 1490831240, "hourly", 250);
-//        request.execute();
-//        return true;
+        return true;
+    }
+
+
+    /**
+     * Called when the user click something in the toolbar
+     * @param item
+     * @return
+     */
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getTitle() == "Export") {
+            /* Back out if running on emulator. */
+            if (Build.FINGERPRINT.startsWith("generic")) {
+                Toast.makeText(this, "Export feature not supported on emulator.",
+                        Toast.LENGTH_SHORT).show();
+                return true;
+            }
+
+                /* Convert to list and try to send email. */
+            List<Entry> to_csv = new ArrayList<Entry>(this.cachedResult);
+            if (export(to_csv)) {
+                sendUserEmail("example@gmail.com" /* TODO: read in user email in GUI. */);
+            }
+        }
+
         return true;
     }
 
@@ -452,6 +513,12 @@ public class HistoricalDataActivity extends AppCompatActivity {
          * @param day, integer representing the day of the month
          */
         public void onDateSet(DatePicker dp, int year, int month, int day) {
+            /* Invalidate cached datasets */
+            hourlyData = null;
+            dailyData = null;
+            weeklyData = null;
+            monthlyData = null;
+            yearlyData = null;
 
             /* Handle the end date */
             if (this.id.equals(this.END_DAY)) {
@@ -530,84 +597,6 @@ public class HistoricalDataActivity extends AppCompatActivity {
     }
 
     /**
-     * Handle hourly click
-     */
-    private void onHourlyClick() {
-
-        Log.d(this.TAG, "This is the end date after selection: " + this.endDate.toString());
-        Log.d(this.TAG, "This is the start date after selection: " + this.startDate.toString());
-
-        /* Make graphs invisible */
-        makeGraphsInvisible();
-
-        /* Now make the relevant graph visible */
-        final LayoutInflater factory = getLayoutInflater();
-        final View v = factory.inflate(R.layout.activity_historical_data, null);
-        View graph = (GraphView) v.findViewById(R.id.hourly_graph);
-        graph.setVisibility(View.VISIBLE);
-
-        //HistoricalRequest request = new HistoricalRequest();
-        //request.execute();
-    }
-
-    /**
-     * Method simply sets each graph view in the historical data
-     * layout to invisible. This is necessary because the views will
-     * otherwise overlap.
-     */
-    private void makeGraphsInvisible() {
-        final LayoutInflater inf = getLayoutInflater();
-        final View view = inf.inflate(R.layout.activity_historical_data, null);
-
-        GraphView gv = (GraphView) view.findViewById(R.id.hourly_graph);
-        gv.setVisibility(View.INVISIBLE);
-
-        gv = (GraphView) view.findViewById(R.id.daily_graph);
-        gv.setVisibility(View.INVISIBLE);
-
-        gv = (GraphView) view.findViewById(R.id.weekly_graph);
-        gv.setVisibility(View.INVISIBLE);
-
-        gv = (GraphView) view.findViewById(R.id.monthly_graph);
-        gv.setVisibility(View.INVISIBLE);
-
-        gv = (GraphView) view.findViewById(R.id.yearly_graph);
-        gv.setVisibility(View.INVISIBLE);
-    }
-
-    /**
-     * Handle daily click.
-     */
-    private void onDailyClick() {
-        // HistoricalRequest request = new HistoricalRequest( ... );
-        // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
-    }
-
-    /**
-     * Handle weekly click.
-     */
-    private void onWeeklyClick() {
-        // HistoricalRequest request = new HistoricalRequest( ... );
-        // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
-    }
-
-    /**
-     * Handle monthly click.
-     */
-    private void onMonthlyClick() {
-        // HistoricalRequest request = new HistoricalRequest( ... );
-        // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
-    }
-
-    /**
-     * Handle yearly click.
-     */
-    private void onYearlyClick() {
-        // HistoricalRequest request = new HistoricalRequest( ... );
-        // request.execute(); <--- results in a call to addDataPointsToChart and several setProgressPercent calls.
-    }
-
-    /**
      * Update a progress bar for integer changes in percent of data loaded.
      * @param progressPercent
      */
@@ -623,46 +612,19 @@ public class HistoricalDataActivity extends AppCompatActivity {
      * @param min_x minimum timestamp in Set.
      * @param min_y minimum cars seen in Set.
      */
-    private void addDataPointsToChart(Set<DataPoint> result, double max_x, double max_y,
+    private void addDataPointsToChart(List<Entry> result, double max_x, double max_y,
                                       double min_x, double min_y) {
+        /* Add datapoints to chart */
+        Log.i(TAG, "Adding data to chart: " + result.toString());
+
+        LineDataSet newSet = new LineDataSet(result, "Historical Data");
+        currentDataset = new LineData(newSet);
+        historicalChart.setData(currentDataset);
+        historicalChart.notifyDataSetChanged();
+        historicalChart.invalidate();
+
         /* Add datapoints to chart, adjust axes etc. */
-        //tabHost.getCurrentTabTag()
-        Log.i(TAG, result.toString());
-        this.cached_result = result;
-    }
-
-
-    /**
-     * Handles click of Export button in HistoricalDataActivity.
-     * Starts by writing the cached_result to disk as csv, then
-     * attempts to send an email (with the cached csv as an attachment).
-     * @param item
-     */
-    public boolean onOptionsItemSelected(MenuItem item) {
-
-        /* Find out which button on toolbar pushed (only one for now). */
-        switch (item.getItemId()) {
-            case R.id.export_button:
-
-                /* Back out if running on emulator. */
-                if (Build.FINGERPRINT.startsWith("generic")) {
-                    Toast.makeText(this, "Export feature not supported on emulator.",
-                            Toast.LENGTH_SHORT).show();
-                    return true;
-                }
-
-                /* Convert to list and try to send email. */
-                List<DataPoint> to_csv = new ArrayList<DataPoint>(this.cached_result);
-                if (export(to_csv)) {
-                    sendUserEmail("example@gmail.com" /* TODO: read in user email in GUI. */);
-                }
-                return true;
-
-            default:
-                // If we got here, the user's action was not recognized.
-                // Invoke the superclass to handle it.
-                return super.onOptionsItemSelected(item);
-        }
+        cachedResult = result;
     }
 
     /**
@@ -671,13 +633,13 @@ public class HistoricalDataActivity extends AppCompatActivity {
      * @param data a List of DataPoints != null.
      * @return false if could not save to file.
      */
-    private boolean export(List<DataPoint> data) {
+    private boolean export(List<Entry> data) {
 
         /* Sort data by timestamp. */
-        Collections.sort(data, new Comparator<DataPoint>() {
+        Collections.sort(data, new Comparator<Entry>() {
 
             @Override
-            public int compare(DataPoint dp1, DataPoint dp2) {
+            public int compare(Entry dp1, Entry dp2) {
                 return (int)(dp1.getX() - dp2.getX());
             }
         });
@@ -686,7 +648,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
         StringBuilder sb = new StringBuilder();
         sb.append("timestamp,datetime,cars\n");
 
-        for (DataPoint d : data) {
+        for (Entry d : data) {
 
             /* Convert timestamp. */
             long itemLong = (long) (d.getX() * 1000);

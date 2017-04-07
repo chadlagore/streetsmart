@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-
-
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -26,6 +24,7 @@
         android:layout_marginRight="2dp"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintHorizontal_bias="0.0" />
+
 
     <LinearLayout
         android:id="@+id/start_date_layout_id"
@@ -201,5 +200,15 @@
 
         </LinearLayout>
     </TabHost>
+
+    <com.github.mikephil.charting.charts.LineChart
+        android:id="@+id/historical_chart"
+        android:layout_width="0dp"
+        android:layout_height="600dp"
+        android:layout_gravity="center"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/start_date_layout_id"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent" />
 
 </android.support.constraint.ConstraintLayout>

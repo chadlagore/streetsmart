@@ -294,9 +294,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onClick(View view) {
-
         /* Start a historical activity. */
         Intent i = new Intent(this, HistoricalDataActivity.class);
+//        i.putExtra("intersectionID", findViewById(R.id.traffic_graph_plot).getId());
         startActivity(i);
     }
 
