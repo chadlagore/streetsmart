@@ -29,6 +29,7 @@ import com.github.mikephil.charting.data.LineDataSet;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.w3c.dom.Text;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -55,6 +56,7 @@ import android.widget.ProgressBar;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.TabHost;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import static android.support.v4.content.FileProvider.getUriForFile;
@@ -133,9 +135,11 @@ public class HistoricalDataActivity extends AppCompatActivity {
             }
         });
 
-        /* Collect intersection id */
+        /* Collect intersection id and show intersection name in title */
         Bundle extras = getIntent().getExtras();
         intersectionID = Long.valueOf(extras.getString("intersection_id"));
+        TextView view = (TextView) findViewById(R.id.historical_title);
+        view.setText("Historical Data: " + extras.getString("intersection_name"));
 
         /* Set up historical data plot */
         historicalChart = (LineChart) findViewById(R.id.historical_chart);
