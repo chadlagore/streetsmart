@@ -30,6 +30,10 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.FieldPosition;
+import java.text.ParseException;
+import java.text.ParsePosition;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.text.SimpleDateFormat;
@@ -38,6 +42,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.SimpleTimeZone;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -52,12 +57,14 @@ import android.widget.TabHost;
 import android.widget.Toast;
 
 import static android.support.v4.content.FileProvider.getUriForFile;
+import static okhttp3.internal.http.HttpDate.format;
 
 public class HistoricalDataActivity extends AppCompatActivity {
 
-    private final String TAG = "historical_data_activity";
+    protected final String TAG = "historical_data_activity";
 
     /* Graph objects */
+    private boolean makingRequest = false;
     private String lastTabID;
     private static LineData hourlyData;
     private static LineData dailyData;
@@ -80,6 +87,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
     private TabHost.TabSpec yearlyTab;
 
     /* Start and end dates */
+    private static DateFormat dateFormat;
     protected Date endDate;
     protected Date startDate;
 
@@ -140,6 +148,9 @@ public class HistoricalDataActivity extends AppCompatActivity {
         historicalChart.setData(currentDataset);
         historicalChart.notifyDataSetChanged();
         historicalChart.invalidate();
+
+        dateFormat = new SimpleDateFormat();
+        dateFormat.setTimeZone(new SimpleTimeZone(SimpleTimeZone.UTC_TIME, "UTC"));
     }
 
     /**
@@ -401,12 +412,14 @@ public class HistoricalDataActivity extends AppCompatActivity {
             public void onTabChanged(String tabId) {
                 Log.d(TAG, "Menu item clicked: " + tabId.toString());
 
-                if (tabId == lastTabID) return;
+                if (tabId == lastTabID || makingRequest) return;
 
                 String granularity = null;
 
-                /* For each tab, we'll need to retreive different
-                information from the server. Handle each case seperately */
+                /*
+                 * For each tab, we'll need to retreive different
+                 * information from the server. Handle each case separately
+                 */
                 if (hourlyTab.getTag().equals(tabId)) {
                     currentDataset = hourlyData;
                     granularity = "hourly";
@@ -431,6 +444,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
                     HistoricalRequest request =
                             new HistoricalRequest((int)startDate.getTime(), (int)endDate.getTime(),
                                     granularity, intersectionID);
+                    makingRequest = true;
                     request.execute();
                 }
             }
@@ -513,6 +527,8 @@ public class HistoricalDataActivity extends AppCompatActivity {
          * @param day, integer representing the day of the month
          */
         public void onDateSet(DatePicker dp, int year, int month, int day) {
+            Log.d(this.hda.TAG, "Setting date");
+
             /* Invalidate cached datasets */
             hourlyData = null;
             dailyData = null;
@@ -522,12 +538,25 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
             /* Handle the end date */
             if (this.id.equals(this.END_DAY)) {
-                this.hda.endDate =  getDateFromDatePicker(dp);;
+                try {
+                    String date = dateFormat.format(getDateFromDatePicker(dp));
+                    this.hda.endDate = dateFormat.parse(date);
+                    Log.d(this.hda.TAG, "setting end date to " + this.hda.toString());
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
             }
 
             /* Handle the start date */
             if (this.id.equals(this.START_DAY)) {
-                this.hda.startDate = getDateFromDatePicker(dp);
+                Log.d(this.hda.TAG, "User selected start day");
+                try {
+                    String date = dateFormat.format(getDateFromDatePicker(dp));
+                    this.hda.startDate = dateFormat.parse(date);
+                    Log.d(this.hda.TAG, "setting start date to " + this.hda.toString());
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
             }
         }
 
@@ -625,6 +654,7 @@ public class HistoricalDataActivity extends AppCompatActivity {
 
         /* Add datapoints to chart, adjust axes etc. */
         cachedResult = result;
+        makingRequest = false;
     }
 
     /**
